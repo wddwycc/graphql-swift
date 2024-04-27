@@ -1,7 +1,7 @@
 import XCTest
-@testable import graphql_swift
+@testable import GraphQLParser
 
-final class graphql_swiftTests: XCTestCase {
+final class GraphQLParserTests: XCTestCase {
     func testParser() async throws {
         let parser = try await GraphQLParser()
         let res = try await parser.parse(source: """

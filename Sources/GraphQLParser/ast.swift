@@ -1,11 +1,6 @@
 //
 //  https://github.com/graphql/graphql-js/blob/v16.8.1/src/language/ast.ts
 //
-//
-//  Created by Wen Duan on 2024/04/27.
-//
-
-import Foundation
 
 public protocol ASTNode {
     var kind: Kind { get }

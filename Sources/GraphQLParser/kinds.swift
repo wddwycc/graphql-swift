@@ -1,10 +1,3 @@
-//
-//  File.swift
-//
-//
-//  Created by Wen Duan on 2024/04/27.
-//
-
 public enum Kind: String, Decodable {
   /** Name */
   case NAME = "Name"

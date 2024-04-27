@@ -1,10 +1,3 @@
-//
-//  File.swift
-//  
-//
-//  Created by Wen Duan on 2024/04/27.
-//
-
 /// Contains a range of UTF-8 character offsets and token references that
 /// identify the region of the source from which the AST derived.
 public struct Location: Decodable {

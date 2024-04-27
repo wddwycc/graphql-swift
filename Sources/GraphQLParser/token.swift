@@ -1,10 +1,3 @@
-//
-//  token.swift
-//  
-//
-//  Created by Wen Duan on 2024/04/27.
-//
-
 /// An exported enum describing the different kinds of tokens that the
 /// lexer emits.
 public enum TokenKind: String, Decodable {

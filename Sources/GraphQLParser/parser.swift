@@ -1,10 +1,10 @@
 import WebKit
 
 @MainActor
-class GraphQLParser {
+public class GraphQLParser {
     private let webview = WKWebView()
     
-    init() async throws {
+    public init() async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<(), Error>) in
             DispatchQueue.main.async {
                 let jsUrl = Bundle.module.url(forResource: "graphql", withExtension: "js")!
