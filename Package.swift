@@ -26,9 +26,8 @@ let package = Package(
                 .process("Resources")
             ]
         ),
+        .testTarget(name: "GraphQLParserTests", dependencies: ["GraphQLParser"]),
         .target(name: "GraphQLCodeGen", dependencies: ["GraphQLParser"]),
-        .testTarget(
-            name: "GraphQLParserTests",
-            dependencies: ["GraphQLParser"]),
+        .testTarget(name: "GraphQLCodeGenTests", dependencies: ["GraphQLCodeGen"]),
     ]
 )
