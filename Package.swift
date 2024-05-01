@@ -15,7 +15,10 @@ let package = Package(
             targets: ["GraphQLParser"]),
         .library(
             name: "GraphQLCodeGen",
-            targets: ["GraphQLCodeGen"])
+            targets: ["GraphQLCodeGen"]),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-syntax.git", from: "510.0.1")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -27,7 +30,14 @@ let package = Package(
             ]
         ),
         .testTarget(name: "GraphQLParserTests", dependencies: ["GraphQLParser"]),
-        .target(name: "GraphQLCodeGen", dependencies: ["GraphQLParser"]),
-        .testTarget(name: "GraphQLCodeGenTests", dependencies: ["GraphQLCodeGen"]),
+        
+        .target(name: "GraphQLCodeGen", dependencies: [
+            "GraphQLParser",
+            .product(name: "SwiftSyntax", package: "swift-syntax"),
+            .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+        ]),
+        .testTarget(name: "GraphQLCodeGenTests", dependencies: [
+            "GraphQLCodeGen",
+        ]),
     ]
 )

@@ -17,6 +17,8 @@ public func getIntrospectionQuery(
         return ""
     }
 
+    // NOTE: For introspection query: queryType, mutationType, subscriptionType only needs name field, here we use `...FullType` because of the model
+    // TODO: After we turn introspective query into a codegen-ed module, replace ...FullType to name
     return """
     query IntrospectionQuery {
       __schema {
