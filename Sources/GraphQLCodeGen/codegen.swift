@@ -159,6 +159,9 @@ private func generateStructBody(ctx: Context, selectionSet: SelectionSetNode, sc
                 body.append(MemberBlockItemSyntax(decl: StructDeclSyntax(
                     modifiers: [DeclModifierSyntax(name: .keyword(.public))],
                     name: TokenSyntax.identifier(wrappedObjectType.name!),
+                    inheritanceClause: InheritanceClauseSyntax.init(inheritedTypes: [
+                        .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("Codable"))),
+                    ]),
                     memberBlock: MemberBlockSyntax(members: try generateStructBody(ctx: ctx, selectionSet: nestedSelectionSet, schemaType: wrappedObjectType))
                 )))
             }
@@ -182,14 +185,23 @@ private func generateEnumDecls(ctx: Context) -> [EnumDeclSyntax] {
     var enums: [EnumDeclSyntax] = []
     for tp in ctx.schema.types {
         if tp.kind != .ENUM { continue }
-        enums.append(EnumDeclSyntax(modifiers: [DeclModifierSyntax(name: .keyword(.public))], name: TokenSyntax.identifier(tp.name!)) {
-            for enumValue in tp.enumValues! {
-                EnumCaseDeclSyntax(
-                    leadingTrivia: enumValue.description.map { "/// \($0)\n" },
-                    elements: [EnumCaseElementSyntax(name: TokenSyntax.identifier(enumValue.name))]
-                )
-            }
-        })
+        
+        enums.append(EnumDeclSyntax(
+            modifiers: [DeclModifierSyntax(name: .keyword(.public))],
+            name: TokenSyntax.identifier(tp.name!),
+            inheritanceClause: InheritanceClauseSyntax.init(inheritedTypes: [
+                .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("String")), trailingComma: TokenSyntax.commaToken()),
+                .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("Codable"))),
+            ]),
+            memberBlockBuilder: {
+                for enumValue in tp.enumValues! {
+                    EnumCaseDeclSyntax(
+                        leadingTrivia: enumValue.description.map { "/// \($0)\n" },
+                        elements: [EnumCaseElementSyntax(name: TokenSyntax.identifier(enumValue.name))]
+                    )
+                }
+            })
+        )
     }
     return enums
 }
@@ -231,6 +243,9 @@ public func generate(schema: __Schema, query: DocumentNode) async throws -> Stri
         StructDeclSyntax(
             modifiers: [DeclModifierSyntax(name: .keyword(.public))],
             name: TokenSyntax.identifier(structName),
+            inheritanceClause: InheritanceClauseSyntax.init(inheritedTypes: [
+                .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("Codable"))),
+            ]),
             memberBlock: MemberBlockSyntax(members: try generateStructBody(ctx: ctx, selectionSet: operation.selectionSet, schemaType: queryType))
         )
     }

@@ -18,15 +18,15 @@ class CodeGenTests: XCTestCase {
             }
             """,
             """
-            public struct ExampleQueryResponse {
+            public struct ExampleQueryResponse: Codable {
                 public let countries: [Country]
-                public struct Country {
+                public struct Country: Codable {
                     public let code: String
                     public let name: String
                     public let currency: String?
                     public let emoji: String
                     public let states: [State]
-                    public struct State {
+                    public struct State: Codable {
                         public let name: String
                     }
                 }
@@ -54,15 +54,15 @@ class CodeGenTests: XCTestCase {
             }
             """,
             """
-            public struct ExampleQueryResponse {
+            public struct ExampleQueryResponse: Codable {
                 public let countries: [Country]
-                public struct Country {
+                public struct Country: Codable {
                     public let code: String
                     public let name: String
                     public let currency: String?
                     public let emoji: String
                     public let states: [State]
-                    public struct State {
+                    public struct State: Codable {
                         public let name: String
                     }
                 }
@@ -99,15 +99,15 @@ class CodeGenTests: XCTestCase {
             }
             """,
             """
-            public struct ExampleQueryResponse {
+            public struct ExampleQueryResponse: Codable {
                 public let countries: [Country]
-                public struct Country {
+                public struct Country: Codable {
                     public let code: String
                     public let name: String
                     public let currency: String?
                     public let emoji: String
                     public let states: [State]
-                    public struct State {
+                    public struct State: Codable {
                         public let name: String
                     }
                 }
@@ -139,15 +139,15 @@ class CodeGenTests: XCTestCase {
             }
             """,
             """
-            public struct ExampleQueryResponse {
+            public struct ExampleQueryResponse: Codable {
                 public let countries: [Country]
-                public struct Country {
+                public struct Country: Codable {
                     public let code: String
                     public let name: String
                     public let currency: String?
                     public let emoji: String
                     public let states: [State]
-                    public struct State {
+                    public struct State: Codable {
                         public let name: String
                     }
                 }
@@ -174,7 +174,7 @@ class CodeGenTests: XCTestCase {
         )
         let enumDecls = 
         """
-        public enum __DirectiveLocation {
+        public enum __DirectiveLocation: String, Codable {
             /// Location adjacent to a query operation.
             case QUERY
             /// Location adjacent to a mutation operation.
@@ -214,7 +214,7 @@ class CodeGenTests: XCTestCase {
             /// Location adjacent to an input object field definition.
             case INPUT_FIELD_DEFINITION
         }
-        public enum __TypeKind {
+        public enum __TypeKind: String, Codable {
             /// Indicates this type is a scalar.
             case SCALAR
             /// Indicates this type is an object. `fields` and `interfaces` are valid fields.
@@ -237,15 +237,15 @@ class CodeGenTests: XCTestCase {
             result,
             enumDecls +
             """
-            public struct ExampleQueryResponse {
+            public struct ExampleQueryResponse: Codable {
                 public let countries: [Country]
-                public struct Country {
+                public struct Country: Codable {
                     public let code: String
                     public let name: String
                     public let currency: String?
                     public let emoji: String
                     public let states: [State]
-                    public struct State {
+                    public struct State: Codable {
                         public let name: String
                     }
                 }
