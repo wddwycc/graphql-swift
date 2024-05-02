@@ -18,16 +18,16 @@ class CodeGenTests: XCTestCase {
             }
             """,
             """
-            struct ExampleQueryResponse {
-                let countries: [Country]
-                struct Country {
-                    let code: String
-                    let name: String
-                    let currency: String?
-                    let emoji: String
-                    let states: [State]
-                    struct State {
-                        let name: String
+            public struct ExampleQueryResponse {
+                public let countries: [Country]
+                public struct Country {
+                    public let code: String
+                    public let name: String
+                    public let currency: String?
+                    public let emoji: String
+                    public let states: [State]
+                    public struct State {
+                        public let name: String
                     }
                 }
             }
@@ -54,16 +54,16 @@ class CodeGenTests: XCTestCase {
             }
             """,
             """
-            struct ExampleQueryResponse {
-                let countries: [Country]
-                struct Country {
-                    let code: String
-                    let name: String
-                    let currency: String?
-                    let emoji: String
-                    let states: [State]
-                    struct State {
-                        let name: String
+            public struct ExampleQueryResponse {
+                public let countries: [Country]
+                public struct Country {
+                    public let code: String
+                    public let name: String
+                    public let currency: String?
+                    public let emoji: String
+                    public let states: [State]
+                    public struct State {
+                        public let name: String
                     }
                 }
             }
@@ -99,16 +99,16 @@ class CodeGenTests: XCTestCase {
             }
             """,
             """
-            struct ExampleQueryResponse {
-                let countries: [Country]
-                struct Country {
-                    let code: String
-                    let name: String
-                    let currency: String?
-                    let emoji: String
-                    let states: [State]
-                    struct State {
-                        let name: String
+            public struct ExampleQueryResponse {
+                public let countries: [Country]
+                public struct Country {
+                    public let code: String
+                    public let name: String
+                    public let currency: String?
+                    public let emoji: String
+                    public let states: [State]
+                    public struct State {
+                        public let name: String
                     }
                 }
             }
@@ -139,16 +139,16 @@ class CodeGenTests: XCTestCase {
             }
             """,
             """
-            struct ExampleQueryResponse {
-                let countries: [Country]
-                struct Country {
-                    let code: String
-                    let name: String
-                    let currency: String?
-                    let emoji: String
-                    let states: [State]
-                    struct State {
-                        let name: String
+            public struct ExampleQueryResponse {
+                public let countries: [Country]
+                public struct Country {
+                    public let code: String
+                    public let name: String
+                    public let currency: String?
+                    public let emoji: String
+                    public let states: [State]
+                    public struct State {
+                        public let name: String
                     }
                 }
             }
@@ -166,7 +166,6 @@ class CodeGenTests: XCTestCase {
         print(result)
     }
     
-    /// asdf
     private func codegenAssertEqual(_ query: String, _ result: String) async throws {
         let schema = try await sendIntrospectionRequest(url: "https://countries.trevorblades.com")
         let result = try await generate(
@@ -175,7 +174,7 @@ class CodeGenTests: XCTestCase {
         )
         let enumDecls = 
         """
-        enum __DirectiveLocation: String, Codable {
+        public enum __DirectiveLocation {
             /// Location adjacent to a query operation.
             case QUERY
             /// Location adjacent to a mutation operation.
@@ -215,7 +214,7 @@ class CodeGenTests: XCTestCase {
             /// Location adjacent to an input object field definition.
             case INPUT_FIELD_DEFINITION
         }
-        enum __TypeKind: String, Codable {
+        public enum __TypeKind {
             /// Indicates this type is a scalar.
             case SCALAR
             /// Indicates this type is an object. `fields` and `interfaces` are valid fields.
@@ -238,16 +237,16 @@ class CodeGenTests: XCTestCase {
             result,
             enumDecls +
             """
-            struct ExampleQueryResponse {
-                let countries: [Country]
-                struct Country {
-                    let code: String
-                    let name: String
-                    let currency: String?
-                    let emoji: String
-                    let states: [State]
-                    struct State {
-                        let name: String
+            public struct ExampleQueryResponse {
+                public let countries: [Country]
+                public struct Country {
+                    public let code: String
+                    public let name: String
+                    public let currency: String?
+                    public let emoji: String
+                    public let states: [State]
+                    public struct State {
+                        public let name: String
                     }
                 }
             }

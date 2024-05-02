@@ -150,15 +150,17 @@ private func generateStructBody(ctx: Context, selectionSet: SelectionSetNode, sc
         let swiftType = try getSwiftType(ctx: ctx, type: fieldType)
         if (!declaredProperties.contains(field.name.value)) {
             declaredProperties.insert(field.name.value)
-            body.append(MemberBlockItemSyntax(decl: DeclSyntax("let \(raw: field.name.value): \(swiftType)")))
+            body.append(MemberBlockItemSyntax(decl: DeclSyntax("public let \(raw: field.name.value): \(swiftType)")))
         }
         if let nestedSelectionSet = field.selectionSet {
             let wrappedObjectType = try getWrappedObjectType(ctx: ctx, type: fieldType)
             if (!declaredStructs.contains(wrappedObjectType.name!)) {
                 declaredStructs.insert(wrappedObjectType.name!)
-                body.append(MemberBlockItemSyntax(decl: try StructDeclSyntax(name: TokenSyntax.identifier(wrappedObjectType.name!)) {
-                    try generateStructBody(ctx: ctx, selectionSet: nestedSelectionSet, schemaType: wrappedObjectType)
-                }))
+                body.append(MemberBlockItemSyntax(decl: StructDeclSyntax(
+                    modifiers: [DeclModifierSyntax(name: .keyword(.public))],
+                    name: TokenSyntax.identifier(wrappedObjectType.name!),
+                    memberBlock: MemberBlockSyntax(members: try generateStructBody(ctx: ctx, selectionSet: nestedSelectionSet, schemaType: wrappedObjectType))
+                )))
             }
         }
     }
@@ -180,7 +182,7 @@ private func generateEnumDecls(ctx: Context) -> [EnumDeclSyntax] {
     var enums: [EnumDeclSyntax] = []
     for tp in ctx.schema.types {
         if tp.kind != .ENUM { continue }
-        enums.append(EnumDeclSyntax(name: TokenSyntax.identifier(tp.name!)) {
+        enums.append(EnumDeclSyntax(modifiers: [DeclModifierSyntax(name: .keyword(.public))], name: TokenSyntax.identifier(tp.name!)) {
             for enumValue in tp.enumValues! {
                 EnumCaseDeclSyntax(
                     leadingTrivia: enumValue.description.map { "/// \($0)\n" },
@@ -227,6 +229,7 @@ public func generate(schema: __Schema, query: DocumentNode) async throws -> Stri
     let source = try SourceFileSyntax {
         for enumDecl in enumDecls { enumDecl }
         StructDeclSyntax(
+            modifiers: [DeclModifierSyntax(name: .keyword(.public))],
             name: TokenSyntax.identifier(structName),
             memberBlock: MemberBlockSyntax(members: try generateStructBody(ctx: ctx, selectionSet: operation.selectionSet, schemaType: queryType))
         )
