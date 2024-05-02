@@ -58,7 +58,8 @@ private func getSwiftType(ctx: Context, type: __Type, nonNull: Bool = false) thr
     case .UNION:
         throw CodegenErrors.TODO
     case .ENUM:
-        throw CodegenErrors.TODO
+        guard let name = type.name else { throw CodegenErrors.invalidType("Expect name for OBJECT type") }
+        tp = IdentifierTypeSyntax(name: TokenSyntax.identifier(name))
     case .INPUT_OBJECT:
         throw CodegenErrors.TODO
     case .LIST:
@@ -100,14 +101,17 @@ private func getWrappedObjectType(ctx: Context, type: __Type) throws -> __Type {
 
 }
 
-private func getFields(ctx: Context, selectionSet: SelectionSetNode, schemaType: __Type) throws -> [(FieldNode, __Field)] {
+private func getFields(ctx: Context, selectionSet: SelectionSetNode, schemaType: __Type) throws -> [(FieldNode, __Type)] {
     try selectionSet.selections.flatMap {
         switch $0 {
         case .field(let field):
+            if field.name.value == "__schema" {
+                return [(field, ctx.schema.types.first(where: { $0.name == "__Schema" })!)]
+            }
             guard let fieldInSchema = schemaType.fields?.first(where: { $0.name == field.name.value }) else {
                 throw CodegenErrors.missingField(field.name.value)
             }
-            return [(field, fieldInSchema)]
+            return [(field, fieldInSchema.type)]
         case .fragmentSpread(let fragmentSpread):
             let fragmentName = fragmentSpread.name.value
             let fragmentNode = ctx.document.definitions
@@ -138,31 +142,28 @@ private func getFields(ctx: Context, selectionSet: SelectionSetNode, schemaType:
 
 private func generateStructBody(ctx: Context, selectionSet: SelectionSetNode, schemaType: __Type) throws -> MemberBlockItemListSyntax {
     let fields = try getFields(ctx: ctx, selectionSet: selectionSet, schemaType: schemaType)
-    let items: [MemberBlockItemSyntax] = try fields.flatMap { args in
-        let (field, fieldInSchema) = args
+
+    var declaredProperties = Set<String>()
+    var declaredStructs = Set<String>()
+    var body: [MemberBlockItemSyntax] = []
+    for (field, fieldType) in fields {
+        let swiftType = try getSwiftType(ctx: ctx, type: fieldType)
+        if (!declaredProperties.contains(field.name.value)) {
+            declaredProperties.insert(field.name.value)
+            body.append(MemberBlockItemSyntax(decl: DeclSyntax("let \(raw: field.name.value): \(swiftType)")))
+        }
         if let nestedSelectionSet = field.selectionSet {
-            let swiftType = try getSwiftType(ctx: ctx, type: fieldInSchema.type)
-            let wrappedObjectType = try getWrappedObjectType(ctx: ctx, type: fieldInSchema.type)
-            return [
-                MemberBlockItemSyntax(decl: DeclSyntax("let \(raw: field.name.value): \(swiftType)")),
-                MemberBlockItemSyntax(decl: try StructDeclSyntax(name: TokenSyntax.identifier(wrappedObjectType.name!)) {
+            let wrappedObjectType = try getWrappedObjectType(ctx: ctx, type: fieldType)
+            if (!declaredStructs.contains(wrappedObjectType.name!)) {
+                declaredStructs.insert(wrappedObjectType.name!)
+                body.append(MemberBlockItemSyntax(decl: try StructDeclSyntax(name: TokenSyntax.identifier(wrappedObjectType.name!)) {
                     try generateStructBody(ctx: ctx, selectionSet: nestedSelectionSet, schemaType: wrappedObjectType)
-                })
-            ]
-        } else {
-            let swiftType = try getSwiftType(ctx: ctx, type: fieldInSchema.type)
-            return [
-                MemberBlockItemSyntax(decl: DeclSyntax("let \(raw: field.name.value): \(swiftType)"))
-            ]
+                }))
+            }
         }
     }
-    return MemberBlockItemListSyntax(items)
-}
 
-public func generate(schema: __Schema, query: String) async throws -> String {
-    let parser = try await GraphQLParser()
-    let documentNode = try await parser.parse(source: query)
-    return try await generate(schema: schema, query: documentNode)
+    return MemberBlockItemListSyntax(body)
 }
 
 public class Context {
@@ -174,6 +175,29 @@ public class Context {
         self.document = document
     }
 }
+
+private func generateEnumDecls(ctx: Context) -> [EnumDeclSyntax] {
+    var enums: [EnumDeclSyntax] = []
+    for tp in ctx.schema.types {
+        if tp.kind != .ENUM { continue }
+        enums.append(EnumDeclSyntax(name: TokenSyntax.identifier(tp.name!)) {
+            for enumValue in tp.enumValues! {
+                EnumCaseDeclSyntax(
+                    leadingTrivia: enumValue.description.map { "/// \($0)\n" },
+                    elements: [EnumCaseElementSyntax(name: TokenSyntax.identifier(enumValue.name))]
+                )
+            }
+        })
+    }
+    return enums
+}
+
+public func generate(schema: __Schema, query: String) async throws -> String {
+    let parser = try await GraphQLParser()
+    let documentNode = try await parser.parse(source: query)
+    return try await generate(schema: schema, query: documentNode)
+}
+
 
 public func generate(schema: __Schema, query: DocumentNode) async throws -> String {
     let ctx = Context(schema: schema, document: query)
@@ -198,7 +222,10 @@ public func generate(schema: __Schema, query: DocumentNode) async throws -> Stri
 
     let queryType = try getQueryType(schema: schema)
     
+    let enumDecls = generateEnumDecls(ctx: ctx)
+    
     let source = try SourceFileSyntax {
+        for enumDecl in enumDecls { enumDecl }
         StructDeclSyntax(
             name: TokenSyntax.identifier(structName),
             memberBlock: MemberBlockSyntax(members: try generateStructBody(ctx: ctx, selectionSet: operation.selectionSet, schemaType: queryType))

@@ -1,28 +1,13 @@
 import Foundation
 
 // reference: https://github.com/graphql/graphql-js/blob/v16.8.1/src/utilities/getIntrospectionQuery.ts#L41
-public func getIntrospectionQuery(
-    descriptions: Bool = true,
-    specifiedByUrl: Bool = true,
-    directiveIsRepeatable: Bool = true,
-    schemaDescription: Bool = true,
-    inputValueDeprecation: Bool = true
-) -> String {
-    let descriptions = descriptions ? "description" : ""
-    let specifiedByUrl = specifiedByUrl ? "specifiedByURL": ""
-    let directiveIsRepeatable = directiveIsRepeatable ? "isRepeatable" : ""
-    let schemaDescription = schemaDescription ? "description" : ""
-    let inputDeprecation: (String) -> String = {
-        if inputValueDeprecation { return $0 }
-        return ""
-    }
-
+public func getIntrospectionQuery() -> String {
     // NOTE: For introspection query: queryType, mutationType, subscriptionType only needs name field, here we use `...FullType` because of the model
     // TODO: After we turn introspective query into a codegen-ed module, replace ...FullType to name
     return """
     query IntrospectionQuery {
       __schema {
-        \(schemaDescription)
+        description
         queryType { ...FullType }
         mutationType { ...FullType }
         subscriptionType { ...FullType }
@@ -31,10 +16,10 @@ public func getIntrospectionQuery(
         }
         directives {
           name
-          \(descriptions)
-          \(directiveIsRepeatable)
+          description
+          isRepeatable
           locations
-          args\(inputDeprecation("(includeDeprecated: true)")) {
+          args(includeDeprecated: true) {
             ...InputValue
           }
         }
@@ -44,12 +29,12 @@ public func getIntrospectionQuery(
     fragment FullType on __Type {
       kind
       name
-      \(descriptions)
-      \(specifiedByUrl)
+      description
+      specifiedByURL
       fields(includeDeprecated: true) {
         name
-        \(descriptions)
-        args\(inputDeprecation("(includeDeprecated: true)")) {
+        description
+        args(includeDeprecated: true) {
           ...InputValue
         }
         type {
@@ -58,7 +43,7 @@ public func getIntrospectionQuery(
         isDeprecated
         deprecationReason
       }
-      inputFields\(inputDeprecation("(includeDeprecated: true)")) {
+      inputFields(includeDeprecated: true) {
         ...InputValue
       }
       interfaces {
@@ -66,7 +51,7 @@ public func getIntrospectionQuery(
       }
       enumValues(includeDeprecated: true) {
         name
-        \(descriptions)
+        description
         isDeprecated
         deprecationReason
       }
@@ -77,11 +62,11 @@ public func getIntrospectionQuery(
 
     fragment InputValue on __InputValue {
       name
-      \(descriptions)
+      description
       type { ...TypeRef }
       defaultValue
-      \(inputDeprecation("isDeprecated"))
-      \(inputDeprecation("deprecationReason"))
+      isDeprecated
+      deprecationReason
     }
 
     fragment TypeRef on __Type {
