@@ -13,29 +13,42 @@ let package = Package(
         .library(
             name: "GraphQLParser",
             targets: ["GraphQLParser"]),
-        .library(
-            name: "GraphQLCodeGen",
+        .executable(
+            name: "graphql-codegen",
             targets: ["GraphQLCodeGen"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-syntax.git", from: "510.0.1")
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.0"),
+        .package(url: "https://github.com/apple/swift-syntax.git", from: "510.0.1"),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
+        // Core Library
         .target(
             name: "GraphQLParser",
             resources: [
                 .process("Resources")
             ]
         ),
-        .testTarget(name: "GraphQLParserTests", dependencies: ["GraphQLParser"]),
-        
-        .target(name: "GraphQLCodeGen", dependencies: [
+        .executableTarget(name: "GraphQLCodeGen", dependencies: [
             "GraphQLParser",
+            .product(name: "ArgumentParser", package: "swift-argument-parser"),
             .product(name: "SwiftSyntax", package: "swift-syntax"),
             .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
         ]),
+        
+        // Examples
+        .executableTarget(
+            name: "codegen",
+            dependencies: [],
+            path: "Examples/codegen",
+            exclude: [
+                "README.md",
+                "documents/",
+            ]),
+        
+        // Tests
+        .testTarget(name: "GraphQLParserTests", dependencies: ["GraphQLParser"]),
+        
         .testTarget(name: "GraphQLCodeGenTests", dependencies: [
             "GraphQLCodeGen",
         ]),

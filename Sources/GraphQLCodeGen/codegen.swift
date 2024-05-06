@@ -208,14 +208,13 @@ private func generateEnumDecls(ctx: Context) -> [EnumDeclSyntax] {
 
 public func generate(schema: __Schema, query: String) async throws -> String {
     let parser = try await GraphQLParser()
-    let documentNode = try await parser.parse(source: query)
-    return try await generate(schema: schema, query: documentNode)
+    let document = try await parser.parse(source: query)
+    return try await generate(schema: schema, document: document)
 }
 
-
-public func generate(schema: __Schema, query: DocumentNode) async throws -> String {
-    let ctx = Context(schema: schema, document: query)
-    let operations = query.definitions
+public func generate(schema: __Schema, document: DocumentNode) async throws -> String {
+    let ctx = Context(schema: schema, document: document)
+    let operations = document.definitions
         .flatMap { a in
             if case let .executable(e) = a {
                 return [e]
