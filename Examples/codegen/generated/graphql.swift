@@ -69,3 +69,77 @@ public struct AllCountriesResponse: Codable {
         }
     }
 }
+public struct IntrospectionQueryResponse: Codable {
+    public let __schema: __Schema?
+    public struct __Schema: Codable {
+        public let queryType: __Type
+        public struct __Type: Codable {
+            public let name: String?
+        }
+        public let mutationType: __Type?
+        public let subscriptionType: __Type?
+        public let types: [__Type]
+        public let directives: [__Directive]
+        public struct __Directive: Codable {
+            public let name: String
+            public let description: String?
+            public let locations: [__DirectiveLocation]
+            public let args: [__InputValue]
+            public struct __InputValue: Codable {
+                public let name: String
+                public let description: String?
+                public let type: __Type
+                public struct __Type: Codable {
+                    public let kind: __TypeKind
+                    public let name: String?
+                    public let ofType: __Type?
+                    public struct __Type: Codable {
+                        public let kind: __TypeKind
+                        public let name: String?
+                        public let ofType: __Type?
+                        public struct __Type: Codable {
+                            public let kind: __TypeKind
+                            public let name: String?
+                            public let ofType: __Type?
+                            public struct __Type: Codable {
+                                public let kind: __TypeKind
+                                public let name: String?
+                                public let ofType: __Type?
+                                public struct __Type: Codable {
+                                    public let kind: __TypeKind
+                                    public let name: String?
+                                    public let ofType: __Type?
+                                    public struct __Type: Codable {
+                                        public let kind: __TypeKind
+                                        public let name: String?
+                                        public let ofType: __Type?
+                                        public struct __Type: Codable {
+                                            public let kind: __TypeKind
+                                            public let name: String?
+                                            public let ofType: __Type?
+                                            public struct __Type: Codable {
+                                                public let kind: __TypeKind
+                                                public let name: String?
+                                                public let ofType: __Type?
+                                                public struct __Type: Codable {
+                                                    public let kind: __TypeKind
+                                                    public let name: String?
+                                                    public let ofType: __Type?
+                                                    public struct __Type: Codable {
+                                                        public let kind: __TypeKind
+                                                        public let name: String?
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                public let defaultValue: String?
+            }
+        }
+    }
+}

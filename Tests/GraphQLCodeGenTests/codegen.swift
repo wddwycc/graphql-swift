@@ -35,6 +35,64 @@ class CodeGenTests: XCTestCase {
         )
     }
     
+    func testTwoQueries() async throws {
+        try await codegenAssertEqual(
+            """
+            query ExampleQuery {
+              countries {
+                code
+                name
+                currency
+                emoji
+                states {
+                    name
+                }
+              }
+            }
+            query ExampleQuery2 {
+              countries {
+                code
+                name
+                currency
+                emoji
+                states {
+                    name
+                }
+              }
+            }
+            """,
+            """
+            public struct ExampleQueryResponse: Codable {
+                public let countries: [Country]
+                public struct Country: Codable {
+                    public let code: String
+                    public let name: String
+                    public let currency: String?
+                    public let emoji: String
+                    public let states: [State]
+                    public struct State: Codable {
+                        public let name: String
+                    }
+                }
+            }
+            public struct ExampleQuery2Response: Codable {
+                public let countries: [Country]
+                public struct Country: Codable {
+                    public let code: String
+                    public let name: String
+                    public let currency: String?
+                    public let emoji: String
+                    public let states: [State]
+                    public struct State: Codable {
+                        public let name: String
+                    }
+                }
+            }
+            """
+        )
+
+    }
+    
     func testResponseWithFragmentSpread() async throws {
         try await codegenAssertEqual(
             """
@@ -168,7 +226,7 @@ class CodeGenTests: XCTestCase {
     
     private func codegenAssertEqual(_ query: String, _ result: String) async throws {
         let schema = try await sendIntrospectionRequest(url: "https://countries.trevorblades.com")
-        let result = try await generate(
+        let generated = try await generate(
             schema: schema,
             query: query
         )
@@ -234,23 +292,8 @@ class CodeGenTests: XCTestCase {
         }\n
         """
         XCTAssertEqual(
-            result,
-            enumDecls +
-            """
-            public struct ExampleQueryResponse: Codable {
-                public let countries: [Country]
-                public struct Country: Codable {
-                    public let code: String
-                    public let name: String
-                    public let currency: String?
-                    public let emoji: String
-                    public let states: [State]
-                    public struct State: Codable {
-                        public let name: String
-                    }
-                }
-            }
-            """
+            generated,
+            enumDecls + result
         )
 
     }

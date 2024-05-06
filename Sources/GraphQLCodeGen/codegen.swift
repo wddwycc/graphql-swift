@@ -227,19 +227,12 @@ public func generate(schema: __Schema, document: DocumentNode) async throws -> S
             }
             return []
         }
-    let operation = operations[0]
-    let structName = operation.name!.value + "Response"
-
-    // TODO: Support query pamater
-    // TODO: Support codable
-
-    let queryType = try getQueryType(schema: schema)
     
     let enumDecls = generateEnumDecls(ctx: ctx)
-    
-    let source = try SourceFileSyntax {
-        for enumDecl in enumDecls { enumDecl }
-        StructDeclSyntax(
+    let structDecls: [StructDeclSyntax] = try operations.map { operation in
+        let structName = operation.name!.value + "Response"
+        let queryType = try getQueryType(schema: schema)
+        return StructDeclSyntax(
             modifiers: [DeclModifierSyntax(name: .keyword(.public))],
             name: TokenSyntax.identifier(structName),
             inheritanceClause: InheritanceClauseSyntax.init(inheritedTypes: [
@@ -247,6 +240,11 @@ public func generate(schema: __Schema, document: DocumentNode) async throws -> S
             ]),
             memberBlock: MemberBlockSyntax(members: try generateStructBody(ctx: ctx, selectionSet: operation.selectionSet, schemaType: queryType))
         )
+    }
+    // TODO: Support query pamater
+    let source = SourceFileSyntax {
+        for enumDecl in enumDecls { enumDecl }
+        for structDecl in structDecls { structDecl }
     }
     return source.formatted().description
 }

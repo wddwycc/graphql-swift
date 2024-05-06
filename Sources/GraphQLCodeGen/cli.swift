@@ -36,7 +36,7 @@ struct GraphQLCodeGenCommand: AsyncParsableCommand {
             let documentNode = try await parser.parse(source: content)
             nodes.append(documentNode)
         }
-        let mergedDocument = DocumentNode.init(loc: nil, definitions: nodes.flatMap { $0.definitions })
+        let mergedDocument = DocumentNode(loc: nil, definitions: nodes.flatMap { $0.definitions })
         let generatedCode = try await generate(schema: schema, document: mergedDocument)
         // STEP4: Write generated code to target folder
         let outputFolderURL = URL(fileURLWithPath: currentPath).appendingPathComponent(output)
