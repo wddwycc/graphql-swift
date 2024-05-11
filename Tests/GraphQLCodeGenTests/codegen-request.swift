@@ -21,9 +21,42 @@ class CodeGenRequestTests: XCTestCase {
         )
     }
     
+    func testRequestWithOptionalRequest() async throws {
+        try await codegenEqual(
+            """
+            query ExampleQuery($code: String) {
+              countries(filter: { code: { eq: $code } }) {
+                code
+              }
+            }
+            """,
+            """
+            public struct ExampleQueryRequest: Codable {
+                public let code: String?
+            }
+            """
+        )
+    }
+    
+    func testRquestWithOptionalName() async throws {
+        try await codegenEqual(
+            """
+            query ExampleQuery($filter: CountryFilterInput!) {
+              countries(filter: $filter) {
+                code
+              }
+            }
+            """,
+            """
+            public struct ExampleQueryRequest: Codable {
+                public let filter: CountryFilterInput
+            }
+            """
+        )
+    }
     
     private func codegenEqual(_ query: String, _ result: String) async throws {
-        let schema = try await sendIntrospectionRequest(url: "https://countries.trevorblades.com")
+        let schema = getSchema()
         let parser = try await GraphQLParser()
         let document = try await parser.parse(source: query)
         let ctx = Context(schema: schema, document: document)
@@ -40,7 +73,7 @@ class CodeGenRequestTests: XCTestCase {
                 }
                 return []
             }.first!
-        let generated = try generateRequestForOperationDefinitionNode(ctx: ctx, operation: operation)!.formatted().description
+        let generated = try generateRequestModelForOperationDefinitionNode(ctx: ctx, operation: operation)!.formatted().description
         XCTAssertEqual(
             generated,
             result

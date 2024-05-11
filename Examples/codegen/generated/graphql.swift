@@ -69,10 +69,10 @@ public struct AllCountriesResponse: Codable {
         }
     }
 }
-public struct CountriesWithCodeRequest: Codable {
+public struct CountriesByCodeRequest: Codable {
     public let code: String
 }
-public struct CountriesWithCodeResponse: Codable {
+public struct CountriesByCodeResponse: Codable {
     public let countries: [Country]
     public struct Country: Codable {
         public let code: String
@@ -81,6 +81,7 @@ public struct CountriesWithCodeResponse: Codable {
 public struct IntrospectionQueryResponse: Codable {
     public let __schema: __Schema?
     public struct __Schema: Codable {
+        public let description: String?
         /// The type that query operations will be rooted at.
         public let queryType: __Type
         public struct __Type: Codable {
@@ -97,6 +98,7 @@ public struct IntrospectionQueryResponse: Codable {
         public struct __Directive: Codable {
             public let name: String
             public let description: String?
+            public let isRepeatable: Bool
             public let locations: [__DirectiveLocation]
             public let args: [__InputValue]
             public struct __InputValue: Codable {
@@ -154,6 +156,8 @@ public struct IntrospectionQueryResponse: Codable {
                 }
                 /// A GraphQL-formatted string representing the default value for this input value.
                 public let defaultValue: String?
+                public let isDeprecated: Bool
+                public let deprecationReason: String?
             }
         }
     }

@@ -158,18 +158,8 @@ class CodeGenResponseTests: XCTestCase {
         )
     }
     
-    func testIntrospectionQuery() async throws {
-        let schema = try await sendIntrospectionRequest(url: "https://countries.trevorblades.com")
-        let query = getIntrospectionQuery()
-        let result = try await generate(
-            schema: schema,
-            query: query
-        )
-        print(result)
-    }
-    
     private func codegenEqual(_ query: String, _ result: String) async throws {
-        let schema = try await sendIntrospectionRequest(url: "https://countries.trevorblades.com")
+        let schema = getSchema()
         let parser = try await GraphQLParser()
         let document = try await parser.parse(source: query)
         let ctx = Context(schema: schema, document: document)

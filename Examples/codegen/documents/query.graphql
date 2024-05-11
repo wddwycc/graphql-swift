@@ -10,7 +10,7 @@ query AllCountries {
   }
 }
 
-query CountriesWithCode($code: String!) {
+query CountriesByCode($code: String!) {
   countries(filter: { code: { eq: $code } }) {
     code
   }
@@ -18,7 +18,7 @@ query CountriesWithCode($code: String!) {
 
 query IntrospectionQuery {
   __schema {
-    
+    description
     queryType { name }
     mutationType { name }
     subscriptionType { name }
@@ -28,9 +28,9 @@ query IntrospectionQuery {
     directives {
       name
       description
-      
+      isRepeatable
       locations
-      args {
+      args(includeDeprecated: true) {
         ...InputValue
       }
     }
@@ -41,11 +41,11 @@ fragment FullType on __Type {
   kind
   name
   description
-  
+  specifiedByURL
   fields(includeDeprecated: true) {
     name
     description
-    args {
+    args(includeDeprecated: true) {
       ...InputValue
     }
     type {
@@ -54,7 +54,7 @@ fragment FullType on __Type {
     isDeprecated
     deprecationReason
   }
-  inputFields {
+  inputFields(includeDeprecated: true) {
     ...InputValue
   }
   interfaces {
@@ -76,8 +76,8 @@ fragment InputValue on __InputValue {
   description
   type { ...TypeRef }
   defaultValue
-  
-  
+  isDeprecated
+  deprecationReason
 }
 
 fragment TypeRef on __Type {
@@ -120,4 +120,3 @@ fragment TypeRef on __Type {
     }
   }
 }
-

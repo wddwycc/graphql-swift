@@ -44,7 +44,8 @@ func convertSchemaTypeToSwiftType(ctx: Context, type: __Type, nonNull: Bool = fa
         guard let name = type.name else { throw CodegenErrors.invalidType("Expect name for OBJECT type") }
         tp = IdentifierTypeSyntax(name: TokenSyntax.identifier(name))
     case .INPUT_OBJECT:
-        throw CodegenErrors.TODO
+        guard let name = type.name else { throw CodegenErrors.invalidType("Expect name for OBJECT type") }
+        tp = IdentifierTypeSyntax(name: TokenSyntax.identifier(name))
     case .LIST:
         guard let ofType = type.ofType else { throw CodegenErrors.invalidType("Missing `ofType` for LIST type") }
         tp = ArrayTypeSyntax(element: try convertSchemaTypeToSwiftType(ctx: ctx, type: ofType))
