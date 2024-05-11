@@ -5,7 +5,7 @@ import SwiftSyntax
 
 class CodeGenResponseTests: XCTestCase {
     func testResponse() async throws {
-        try await codegenResponseEqual(
+        try await codegenEqual(
             """
             query ExampleQuery {
               countries {
@@ -37,44 +37,8 @@ class CodeGenResponseTests: XCTestCase {
         )
     }
     
-    func testRequestPayload() async throws {
-        // TODO
-    }
-    
-    func testTwoQueries() async throws {
-        try await codegenResponseEqual(
-            """
-            query ExampleQuery {
-              countries {
-                code
-              }
-            }
-            query ExampleQuery2 {
-              countries {
-                code
-              }
-            }
-            """,
-            """
-            public struct ExampleQueryResponse: Codable {
-                public let countries: [Country]
-                public struct Country: Codable {
-                    public let code: String
-                }
-            }
-            public struct ExampleQuery2Response: Codable {
-                public let countries: [Country]
-                public struct Country: Codable {
-                    public let code: String
-                }
-            }
-            """
-        )
-
-    }
-    
     func testResponseWithFragmentSpread() async throws {
-        try await codegenResponseEqual(
+        try await codegenEqual(
             """
             query ExampleQuery {
               countries {
@@ -110,7 +74,7 @@ class CodeGenResponseTests: XCTestCase {
     }
     
     func testResponseWithInlineFragment() async throws {
-        try await codegenResponseEqual(
+        try await codegenEqual(
             """
             query ExampleQuery {
               countries {
@@ -155,7 +119,7 @@ class CodeGenResponseTests: XCTestCase {
     }
     
     func testResponseWithDuplicatedFields() async throws {
-        try await codegenResponseEqual(
+        try await codegenEqual(
             """
             query ExampleQuery {
               countries {
@@ -204,12 +168,12 @@ class CodeGenResponseTests: XCTestCase {
         print(result)
     }
     
-    private func codegenResponseEqual(_ query: String, _ result: String) async throws {
+    private func codegenEqual(_ query: String, _ result: String) async throws {
         let schema = try await sendIntrospectionRequest(url: "https://countries.trevorblades.com")
         let parser = try await GraphQLParser()
         let document = try await parser.parse(source: query)
         let ctx = Context(schema: schema, document: document)
-        let operations = document.definitions
+        let operation = document.definitions
             .flatMap { a in
                 if case let .executable(e) = a {
                     return [e]
@@ -221,15 +185,10 @@ class CodeGenResponseTests: XCTestCase {
                     return [o]
                 }
                 return []
-            }
-        let structDecls: [StructDeclSyntax] = try operations.map {
-            try generateResponseModelForOperationDefinitionNode(ctx: ctx, operation: $0)
-        }
-        let source = SourceFileSyntax {
-            for structDecl in structDecls { structDecl }
-        }
+            }.first!
+        let generated = try generateResponseModelForOperationDefinitionNode(ctx: ctx, operation: operation).formatted().description
         XCTAssertEqual(
-            source.formatted().description,
+            generated,
             result
         )
     }

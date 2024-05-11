@@ -10,6 +10,12 @@ query AllCountries {
   }
 }
 
+query CountriesWithCode($code: String!) {
+  countries(filter: { code: { eq: $code } }) {
+    code
+  }
+}
+
 query IntrospectionQuery {
   __schema {
     

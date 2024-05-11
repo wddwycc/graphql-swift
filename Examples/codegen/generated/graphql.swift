@@ -69,6 +69,15 @@ public struct AllCountriesResponse: Codable {
         }
     }
 }
+public struct CountriesWithCodeRequest: Codable {
+    public let code: String
+}
+public struct CountriesWithCodeResponse: Codable {
+    public let countries: [Country]
+    public struct Country: Codable {
+        public let code: String
+    }
+}
 public struct IntrospectionQueryResponse: Codable {
     public let __schema: __Schema?
     public struct __Schema: Codable {

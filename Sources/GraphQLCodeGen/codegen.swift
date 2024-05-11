@@ -68,15 +68,13 @@ public func generate(schema: __Schema, document: DocumentNode) async throws -> S
             }
             return []
         }
-    
     let enumDecls = generateEnumDecls(ctx: ctx)
     let structDecls: [StructDeclSyntax] = try operations.flatMap {
         try generateModelsForOperation(ctx: ctx, operation: $0)
     }
-    // TODO: Support query pamater
     let source = SourceFileSyntax {
         for enumDecl in enumDecls { enumDecl }
         for structDecl in structDecls { structDecl }
     }
-    return source.formatted().description
+    return source.formatted().description + "\n"
 }

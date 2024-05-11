@@ -13,7 +13,7 @@ func getQueryType(schema: __Schema) throws -> __Type {
     return queryType
 }
 
-func getSwiftType(ctx: Context, type: __Type, nonNull: Bool = false) throws -> TypeSyntaxProtocol {
+func convertSchemaTypeToSwiftType(ctx: Context, type: __Type, nonNull: Bool = false) throws -> TypeSyntaxProtocol {
     let tp: TypeSyntaxProtocol
     switch type.kind {
     case .SCALAR:
@@ -47,11 +47,11 @@ func getSwiftType(ctx: Context, type: __Type, nonNull: Bool = false) throws -> T
         throw CodegenErrors.TODO
     case .LIST:
         guard let ofType = type.ofType else { throw CodegenErrors.invalidType("Missing `ofType` for LIST type") }
-        tp = ArrayTypeSyntax(element: try getSwiftType(ctx: ctx, type: ofType))
+        tp = ArrayTypeSyntax(element: try convertSchemaTypeToSwiftType(ctx: ctx, type: ofType))
     case .NON_NULL:
         if nonNull { throw CodegenErrors.invalidType("NON_NULL type cannot be nested") }
         guard let ofType = type.ofType else { throw CodegenErrors.invalidType("Missing `ofType` for NON_NULL type") }
-        return try getSwiftType(ctx: ctx, type: ofType, nonNull: true)
+        return try convertSchemaTypeToSwiftType(ctx: ctx, type: ofType, nonNull: true)
     }
     if (nonNull) {
         return tp
@@ -59,7 +59,7 @@ func getSwiftType(ctx: Context, type: __Type, nonNull: Bool = false) throws -> T
     return OptionalTypeSyntax(wrappedType: tp)
 }
 
-func getWrappedObjectType(ctx: Context, type: __Type) throws -> __Type {
+private func getWrappedObjectType(ctx: Context, type: __Type) throws -> __Type {
     switch type.kind {
     case .SCALAR:
         throw CodegenErrors.TODO
@@ -84,7 +84,7 @@ func getWrappedObjectType(ctx: Context, type: __Type) throws -> __Type {
 
 }
 
-func getFields(ctx: Context, selectionSet: SelectionSetNode, schemaType: __Type) throws -> [(FieldNode, __Field)] {
+private func getFields(ctx: Context, selectionSet: SelectionSetNode, schemaType: __Type) throws -> [(FieldNode, __Field)] {
     try selectionSet.selections.flatMap {
         switch $0 {
         case .field(let field):
@@ -135,7 +135,7 @@ func generateStructBody(ctx: Context, selectionSet: SelectionSetNode, schemaType
     var declaredStructs = Set<String>()
     var body: [MemberBlockItemSyntax] = []
     for (field, fieldInSchema) in fields {
-        let swiftType = try getSwiftType(ctx: ctx, type: fieldInSchema.type)
+        let swiftType = try convertSchemaTypeToSwiftType(ctx: ctx, type: fieldInSchema.type)
         if (!declaredProperties.contains(field.name.value)) {
             declaredProperties.insert(field.name.value)
             body.append(MemberBlockItemSyntax(
