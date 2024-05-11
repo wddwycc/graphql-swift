@@ -101,17 +101,22 @@ private func getWrappedObjectType(ctx: Context, type: __Type) throws -> __Type {
 
 }
 
-private func getFields(ctx: Context, selectionSet: SelectionSetNode, schemaType: __Type) throws -> [(FieldNode, __Type)] {
+private func getFields(ctx: Context, selectionSet: SelectionSetNode, schemaType: __Type) throws -> [(FieldNode, __Field)] {
     try selectionSet.selections.flatMap {
         switch $0 {
         case .field(let field):
+            // NOTE: __schema doesn't exist in schema fields, but still queriable
             if field.name.value == "__schema" {
-                return [(field, ctx.schema.types.first(where: { $0.name == "__Schema" })!)]
+                let fieldInSchema = __Field(
+                    name: "__schema", description: nil, args: [],
+                    type: ctx.schema.types.first(where: { $0.name == "__Schema" })!, isDeprecated: false, deprecationReason: nil
+                )
+                return [(field, fieldInSchema)]
             }
             guard let fieldInSchema = schemaType.fields?.first(where: { $0.name == field.name.value }) else {
                 throw CodegenErrors.missingField(field.name.value)
             }
-            return [(field, fieldInSchema.type)]
+            return [(field, fieldInSchema)]
         case .fragmentSpread(let fragmentSpread):
             let fragmentName = fragmentSpread.name.value
             let fragmentNode = ctx.document.definitions
@@ -146,14 +151,17 @@ private func generateStructBody(ctx: Context, selectionSet: SelectionSetNode, sc
     var declaredProperties = Set<String>()
     var declaredStructs = Set<String>()
     var body: [MemberBlockItemSyntax] = []
-    for (field, fieldType) in fields {
-        let swiftType = try getSwiftType(ctx: ctx, type: fieldType)
+    for (field, fieldInSchema) in fields {
+        let swiftType = try getSwiftType(ctx: ctx, type: fieldInSchema.type)
         if (!declaredProperties.contains(field.name.value)) {
             declaredProperties.insert(field.name.value)
-            body.append(MemberBlockItemSyntax(decl: DeclSyntax("public let \(raw: field.name.value): \(swiftType)")))
+            body.append(MemberBlockItemSyntax(
+                leadingTrivia: fieldInSchema.description.map { "/// \($0)\n" },
+                decl: DeclSyntax("public let \(raw: field.name.value): \(swiftType)")
+            ))
         }
         if let nestedSelectionSet = field.selectionSet {
-            let wrappedObjectType = try getWrappedObjectType(ctx: ctx, type: fieldType)
+            let wrappedObjectType = try getWrappedObjectType(ctx: ctx, type: fieldInSchema.type)
             if (!declaredStructs.contains(wrappedObjectType.name!)) {
                 declaredStructs.insert(wrappedObjectType.name!)
                 body.append(MemberBlockItemSyntax(decl: StructDeclSyntax(
@@ -185,7 +193,6 @@ private func generateEnumDecls(ctx: Context) -> [EnumDeclSyntax] {
     var enums: [EnumDeclSyntax] = []
     for tp in ctx.schema.types {
         if tp.kind != .ENUM { continue }
-        
         enums.append(EnumDeclSyntax(
             modifiers: [DeclModifierSyntax(name: .keyword(.public))],
             name: TokenSyntax.identifier(tp.name!),

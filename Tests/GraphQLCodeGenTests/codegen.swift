@@ -41,23 +41,11 @@ class CodeGenTests: XCTestCase {
             query ExampleQuery {
               countries {
                 code
-                name
-                currency
-                emoji
-                states {
-                    name
-                }
               }
             }
             query ExampleQuery2 {
               countries {
                 code
-                name
-                currency
-                emoji
-                states {
-                    name
-                }
               }
             }
             """,
@@ -66,26 +54,12 @@ class CodeGenTests: XCTestCase {
                 public let countries: [Country]
                 public struct Country: Codable {
                     public let code: String
-                    public let name: String
-                    public let currency: String?
-                    public let emoji: String
-                    public let states: [State]
-                    public struct State: Codable {
-                        public let name: String
-                    }
                 }
             }
             public struct ExampleQuery2Response: Codable {
                 public let countries: [Country]
                 public struct Country: Codable {
                     public let code: String
-                    public let name: String
-                    public let currency: String?
-                    public let emoji: String
-                    public let states: [State]
-                    public struct State: Codable {
-                        public let name: String
-                    }
                 }
             }
             """
