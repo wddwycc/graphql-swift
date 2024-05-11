@@ -1,5 +1,6 @@
 import Foundation
 import ArgumentParser
+import GraphQLCodeGen
 import GraphQLParser
 
 @main

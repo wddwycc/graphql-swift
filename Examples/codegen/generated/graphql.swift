@@ -72,13 +72,18 @@ public struct AllCountriesResponse: Codable {
 public struct IntrospectionQueryResponse: Codable {
     public let __schema: __Schema?
     public struct __Schema: Codable {
+        /// The type that query operations will be rooted at.
         public let queryType: __Type
         public struct __Type: Codable {
             public let name: String?
         }
+        /// If this server supports mutation, the type that mutation operations will be rooted at.
         public let mutationType: __Type?
+        /// If this server support subscription, the type that subscription operations will be rooted at.
         public let subscriptionType: __Type?
+        /// A list of all types supported by this server.
         public let types: [__Type]
+        /// A list of all directives supported by this server.
         public let directives: [__Directive]
         public struct __Directive: Codable {
             public let name: String
@@ -138,6 +143,7 @@ public struct IntrospectionQueryResponse: Codable {
                         }
                     }
                 }
+                /// A GraphQL-formatted string representing the default value for this input value.
                 public let defaultValue: String?
             }
         }
