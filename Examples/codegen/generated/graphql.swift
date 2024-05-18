@@ -89,9 +89,18 @@ public struct AllCountriesResponse: Codable {
     }
 }
 public struct CountriesByCodeRequest: Codable {
-    public let code: String
+    public var code: String
 }
 public struct CountriesByCodeResponse: Codable {
+    public let countries: [Country]
+    public struct Country: Codable {
+        public let code: String
+    }
+}
+public struct CountriesByRequest: Codable {
+    public var filter: CountryFilterInput
+}
+public struct CountriesByResponse: Codable {
     public let countries: [Country]
     public struct Country: Codable {
         public let code: String

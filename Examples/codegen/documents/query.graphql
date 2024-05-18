@@ -16,6 +16,12 @@ query CountriesByCode($code: String!) {
   }
 }
 
+query CountriesBy($filter: CountryFilterInput!) {
+  countries(filter: $filter) {
+    code
+  }
+}
+
 query IntrospectionQuery {
   __schema {
     description

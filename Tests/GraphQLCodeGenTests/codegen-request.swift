@@ -15,7 +15,7 @@ class CodeGenRequestTests: XCTestCase {
             """,
             """
             public struct ExampleQueryRequest: Codable {
-                public let code: String
+                public var code: String
             }
             """
         )
@@ -32,7 +32,7 @@ class CodeGenRequestTests: XCTestCase {
             """,
             """
             public struct ExampleQueryRequest: Codable {
-                public let code: String?
+                public var code: String?
             }
             """
         )
@@ -49,7 +49,7 @@ class CodeGenRequestTests: XCTestCase {
             """,
             """
             public struct ExampleQueryRequest: Codable {
-                public let filter: CountryFilterInput
+                public var filter: CountryFilterInput
             }
             """
         )

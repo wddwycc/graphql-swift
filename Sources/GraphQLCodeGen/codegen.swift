@@ -39,7 +39,7 @@ private func generateTypesInSchema(ctx: Context) throws -> [DeclSyntaxProtocol] 
                         let swiftType = try convertSchemaTypeToSwiftType(ctx: ctx, type: field.type)
                         MemberBlockItemSyntax(
                             leadingTrivia: field.description.map { "/// \($0)\n" },
-                            // NOTE: use var here to derive more flexibile initializer for struct
+                            // NOTE: use var here to derive more flexibile initializer for the struct
                             decl: DeclSyntax("public var \(raw: safeFieldName(field.name)): \(swiftType)")
                         )
                     }
