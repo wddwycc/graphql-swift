@@ -205,20 +205,26 @@ public class GraphQLClient {
     private let url: URL = URL(string: "https://countries.trevorblades.com")!
     private let session: URLSession
     private let jsonDecoder = JSONDecoder()
+    private var requestInterceptor: ((inout URLRequest) -> Void)?
+    /// Set custom request interceptor, the given closure would run before every request is sent. Most common use case is add authentication header
+    public func setRequestInterceptor(_ interceptor: @escaping (inout URLRequest) -> Void) {
+        self.requestInterceptor = interceptor
+    }
+    public init() {
+        let config = URLSessionConfiguration.default
+        self.session = URLSession(configuration: config)
+    }
     private func sendRequest<RequestPayload: Codable, ResponsePayload: Codable>(payload: RequestPayload) async throws -> ResponsePayload {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(payload)
+        requestInterceptor?(&request)
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             throw URLError(.badServerResponse)
         }
         return try jsonDecoder.decode(GraphQLResponsePayload<ResponsePayload> .self, from: data).data
-    }
-    public init() {
-        let config = URLSessionConfiguration.default
-        self.session = URLSession(configuration: config)
     }
     public func introspectionQuery() async throws -> IntrospectionQueryResponse {
         let query = "query IntrospectionQuery {\n  __schema {\n    description\n    queryType { name }\n    mutationType { name }\n    subscriptionType { name }\n    types {\n      ...FullType\n    }\n    directives {\n      name\n      description\n      isRepeatable\n      locations\n      args(includeDeprecated: true) {\n        ...InputValue\n      }\n    }\n  }\n}"

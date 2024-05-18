@@ -123,16 +123,14 @@ public func generate(schema: __Schema, documents: [(DocumentNode, String)]) asyn
             )),
             .init(decl: DeclSyntax(
                 """
-                private func sendRequest<RequestPayload: Codable, ResponsePayload: Codable>(payload: RequestPayload) async throws -> ResponsePayload {
-                    var request = URLRequest(url: url)
-                    request.httpMethod = "POST"
-                    request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-                    request.httpBody = try JSONEncoder().encode(payload)
-                    let (data, response) = try await session.data(for: request)
-                    guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                        throw URLError(.badServerResponse)
-                    }
-                    return try jsonDecoder.decode(GraphQLResponsePayload<ResponsePayload> .self, from: data).data
+                private var requestInterceptor: ((inout URLRequest) -> Void)?
+                """
+            )),
+            .init(decl: DeclSyntax(
+                """
+                /// Set custom request interceptor, the given closure would run before every request is sent. Most common use case is add authentication header
+                public func setRequestInterceptor(_ interceptor: @escaping (inout URLRequest) -> Void) {
+                    self.requestInterceptor = interceptor
                 }
                 """
             )),
@@ -141,6 +139,22 @@ public func generate(schema: __Schema, documents: [(DocumentNode, String)]) asyn
                 public init() {
                     let config = URLSessionConfiguration.default
                     self.session = URLSession(configuration: config)
+                }
+                """
+            )),
+            .init(decl: DeclSyntax(
+                """
+                private func sendRequest<RequestPayload: Codable, ResponsePayload: Codable>(payload: RequestPayload) async throws -> ResponsePayload {
+                    var request = URLRequest(url: url)
+                    request.httpMethod = "POST"
+                    request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+                    request.httpBody = try JSONEncoder().encode(payload)
+                    requestInterceptor?(&request)
+                    let (data, response) = try await session.data(for: request)
+                    guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                        throw URLError(.badServerResponse)
+                    }
+                    return try jsonDecoder.decode(GraphQLResponsePayload<ResponsePayload> .self, from: data).data
                 }
                 """
             )),

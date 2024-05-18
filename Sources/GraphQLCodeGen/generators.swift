@@ -63,7 +63,7 @@ func generateModelsForOperation(ctx: Context, operation: OperationDefinitionNode
 }
 
 func generateClientFuncForOperationDefinitionNode(ctx: Context, operation: OperationDefinitionNode) throws -> DeclSyntax {
-    let operationNameToken = TokenSyntax.identifier(lowercaseFirstLetter(operation.name!.value))
+    let operationNameToken = TokenSyntax.identifier(operation.name!.value.firstLetterLowercased())
     let requestPayloadToken = TokenSyntax.identifier(operation.name!.value + "Request")
     let responsePayloadToken = TokenSyntax.identifier(operation.name!.value + "Response")
     
