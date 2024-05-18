@@ -48,7 +48,7 @@ func generateResponseModelForOperationDefinitionNode(ctx: Context, operation: Op
         inheritanceClause: InheritanceClauseSyntax.init(inheritedTypes: [
             .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("Codable"))),
         ]),
-        memberBlock: MemberBlockSyntax(members: try generateStructBody(ctx: ctx, selectionSet: operation.selectionSet, schemaType: queryType))
+        memberBlock: MemberBlockSyntax(members: try generateStructBody(ctx: ctx, schemaType: queryType, selectionSet: operation.selectionSet))
     )
 }
 

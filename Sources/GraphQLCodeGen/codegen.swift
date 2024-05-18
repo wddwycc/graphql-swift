@@ -23,28 +23,50 @@ public class Context {
     }
 }
 
-private func generateEnumDecls(ctx: Context) -> [EnumDeclSyntax] {
-    var enums: [EnumDeclSyntax] = []
+private func generateTypesInSchema(ctx: Context) throws -> [DeclSyntaxProtocol] {
+    var decls: [DeclSyntaxProtocol] = []
     for tp in ctx.schema.types {
-        if tp.kind != .ENUM { continue }
-        enums.append(EnumDeclSyntax(
-            modifiers: [DeclModifierSyntax(name: .keyword(.public))],
-            name: TokenSyntax.identifier(tp.name!),
-            inheritanceClause: InheritanceClauseSyntax.init(inheritedTypes: [
-                .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("String")), trailingComma: TokenSyntax.commaToken()),
-                .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("Codable"))),
-            ]),
-            memberBlockBuilder: {
-                for enumValue in tp.enumValues! {
-                    EnumCaseDeclSyntax(
-                        leadingTrivia: enumValue.description.map { "/// \($0)\n" },
-                        elements: [EnumCaseElementSyntax(name: TokenSyntax.identifier(enumValue.name))]
-                    )
+        switch tp.kind {
+        case .INPUT_OBJECT:
+            decls.append(try StructDeclSyntax(
+                modifiers: [DeclModifierSyntax(name: .keyword(.public))],
+                name: TokenSyntax.identifier(tp.name!),
+                inheritanceClause: InheritanceClauseSyntax.init(inheritedTypes: [
+                    .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("Codable"))),
+                ]),
+                memberBlockBuilder: {
+                    for field in tp.inputFields ?? [] {
+                        let swiftType = try convertSchemaTypeToSwiftType(ctx: ctx, type: field.type)
+                        MemberBlockItemSyntax(
+                            leadingTrivia: field.description.map { "/// \($0)\n" },
+                            // NOTE: use var here to derive more flexibile initializer for struct
+                            decl: DeclSyntax("public var \(raw: safeFieldName(field.name)): \(swiftType)")
+                        )
+                    }
                 }
-            })
-        )
+            ))
+        case .ENUM:
+            decls.append(EnumDeclSyntax(
+                modifiers: [DeclModifierSyntax(name: .keyword(.public))],
+                name: TokenSyntax.identifier(tp.name!),
+                inheritanceClause: InheritanceClauseSyntax.init(inheritedTypes: [
+                    .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("String")), trailingComma: TokenSyntax.commaToken()),
+                    .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("Codable"))),
+                ]),
+                memberBlockBuilder: {
+                    for enumValue in tp.enumValues! {
+                        EnumCaseDeclSyntax(
+                            leadingTrivia: enumValue.description.map { "/// \($0)\n" },
+                            elements: [EnumCaseElementSyntax(name: TokenSyntax.identifier(enumValue.name))]
+                        )
+                    }
+                }
+            ))
+        default:
+            break
+        }
     }
-    return enums
+    return decls
 }
 
 public func generate(schema: __Schema, query: String) async throws -> String {
@@ -68,13 +90,13 @@ public func generate(schema: __Schema, document: DocumentNode) async throws -> S
             }
             return []
         }
-    let enumDecls = generateEnumDecls(ctx: ctx)
-    let structDecls: [StructDeclSyntax] = try operations.flatMap {
+    let schemaTypeDecls = try generateTypesInSchema(ctx: ctx)
+    let operationModelDecls: [StructDeclSyntax] = try operations.flatMap {
         try generateModelsForOperation(ctx: ctx, operation: $0)
     }
     let source = SourceFileSyntax {
-        for enumDecl in enumDecls { enumDecl }
-        for structDecl in structDecls { structDecl }
+        for schemaTypeDecl in schemaTypeDecls { schemaTypeDecl }
+        for operationModelDecl in operationModelDecls { operationModelDecl }
     }
     return source.formatted().description + "\n"
 }

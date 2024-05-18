@@ -1,3 +1,22 @@
+public struct ContinentFilterInput: Codable {
+    public var code: StringQueryOperatorInput?
+}
+public struct CountryFilterInput: Codable {
+    public var code: StringQueryOperatorInput?
+    public var continent: StringQueryOperatorInput?
+    public var currency: StringQueryOperatorInput?
+    public var name: StringQueryOperatorInput?
+}
+public struct LanguageFilterInput: Codable {
+    public var code: StringQueryOperatorInput?
+}
+public struct StringQueryOperatorInput: Codable {
+    public var eq: String?
+    public var `in`: [String]?
+    public var ne: String?
+    public var nin: [String]?
+    public var regex: String?
+}
 public enum __DirectiveLocation: String, Codable {
     /// Location adjacent to a query operation.
     case QUERY

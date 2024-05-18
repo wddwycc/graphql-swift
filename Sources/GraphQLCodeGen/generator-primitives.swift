@@ -3,6 +3,14 @@
 import SwiftSyntax
 import GraphQLParser
 
+// TODO: Handle all Swift keywords
+func safeFieldName(_ fieldName: String) -> String {
+    if fieldName == "in" {
+        return "`\(fieldName)`"
+    }
+    return fieldName
+}
+
 func getQueryType(schema: __Schema) throws -> __Type {
     guard let queryTypeName = schema.queryType.name else {
         throw CodegenErrors.missingQueryTypeName
@@ -129,7 +137,7 @@ private func getFields(ctx: Context, selectionSet: SelectionSetNode, schemaType:
     }
 }
 
-func generateStructBody(ctx: Context, selectionSet: SelectionSetNode, schemaType: __Type) throws -> MemberBlockItemListSyntax {
+func generateStructBody(ctx: Context, schemaType: __Type, selectionSet: SelectionSetNode) throws -> MemberBlockItemListSyntax {
     let fields = try getFields(ctx: ctx, selectionSet: selectionSet, schemaType: schemaType)
 
     var declaredProperties = Set<String>()
@@ -154,7 +162,7 @@ func generateStructBody(ctx: Context, selectionSet: SelectionSetNode, schemaType
                     inheritanceClause: InheritanceClauseSyntax.init(inheritedTypes: [
                         .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("Codable"))),
                     ]),
-                    memberBlock: MemberBlockSyntax(members: try generateStructBody(ctx: ctx, selectionSet: nestedSelectionSet, schemaType: wrappedObjectType))
+                    memberBlock: MemberBlockSyntax(members: try generateStructBody(ctx: ctx, schemaType: wrappedObjectType, selectionSet: nestedSelectionSet))
                 )))
             }
         }
