@@ -162,7 +162,7 @@ class CodeGenResponseTests: XCTestCase {
         let schema = getSchema()
         let parser = try await GraphQLParser()
         let document = try await parser.parse(source: query)
-        let ctx = Context(schema: schema, document: document)
+        let ctx = Context(schema: schema, document: document, rawDocument: query)
         let operation = document.definitions
             .flatMap { a in
                 if case let .executable(e) = a {

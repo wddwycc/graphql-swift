@@ -4,10 +4,10 @@ public struct Location: Decodable {
   /**
    * The character offset at which this Node begins.
    */
-  let start: UInt
+  public let start: Int
 
   /**
    * The character offset at which this Node ends.
    */
-  let end: UInt
+  public let end: Int
 }
