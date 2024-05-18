@@ -2,8 +2,7 @@
 
 An example project to show the power of the codegen tool. 
 
-
-## How
+## How to run
 
 At the root folder of the project, run:
 
