@@ -27,6 +27,7 @@ let package = Package(
         // Core Libraries
         .target(
             name: "GraphQLParser",
+            exclude: ["README.md"],
             resources: [
                 .process("resources")
             ]
@@ -39,9 +40,13 @@ let package = Package(
         ]),
 
         // graphql-codegen command line interface
-        .executableTarget(name: "GraphQLCodeGenCLI", dependencies: [
-            "GraphQLCodeGen",
-        ]),
+        .executableTarget(
+            name: "GraphQLCodeGenCLI",
+            dependencies: [
+                "GraphQLCodeGen",
+            ],
+            exclude: ["README.md"]
+        ),
         
         // Examples
         .executableTarget(
