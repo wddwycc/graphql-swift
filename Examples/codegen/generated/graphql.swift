@@ -205,64 +205,39 @@ public class GraphQLClient {
     private let url: URL = URL(string: "https://countries.trevorblades.com")!
     private let session: URLSession
     private let jsonDecoder = JSONDecoder()
+    private func sendRequest<RequestPayload: Codable, ResponsePayload: Codable>(payload: RequestPayload) async throws -> ResponsePayload {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(payload)
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+        return try jsonDecoder.decode(GraphQLResponsePayload<ResponsePayload> .self, from: data).data
+    }
     public init() {
         let config = URLSessionConfiguration.default
         self.session = URLSession(configuration: config)
     }
     public func introspectionQuery() async throws -> IntrospectionQueryResponse {
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         let query = "query IntrospectionQuery {\n  __schema {\n    description\n    queryType { name }\n    mutationType { name }\n    subscriptionType { name }\n    types {\n      ...FullType\n    }\n    directives {\n      name\n      description\n      isRepeatable\n      locations\n      args(includeDeprecated: true) {\n        ...InputValue\n      }\n    }\n  }\n}"
-        let requestPayload = GraphQLRequestSimplePayload(query: query)
-        request.httpBody = try JSONEncoder().encode(requestPayload)
-
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw URLError(.badServerResponse)
-        }
-        return try jsonDecoder.decode(GraphQLResponsePayload<IntrospectionQueryResponse> .self, from: data).data
+        let payload = GraphQLRequestSimplePayload(query: query)
+        return try await sendRequest(payload: payload)
     }
     public func allCountries() async throws -> AllCountriesResponse {
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         let query = "query AllCountries {\n  countries {\n    code\n    name\n    currency\n    emoji\n    states {\n        name\n    }\n  }\n}"
-        let requestPayload = GraphQLRequestSimplePayload(query: query)
-        request.httpBody = try JSONEncoder().encode(requestPayload)
-
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw URLError(.badServerResponse)
-        }
-        return try jsonDecoder.decode(GraphQLResponsePayload<AllCountriesResponse> .self, from: data).data
+        let payload = GraphQLRequestSimplePayload(query: query)
+        return try await sendRequest(payload: payload)
     }
     public func countriesByCode(variables: CountriesByCodeRequest) async throws -> CountriesByCodeResponse {
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         let query = "query CountriesByCode($code: String!) {\n  countries(filter: { code: { eq: $code } }) {\n    code\n  }\n}"
-        let requestPayload = GraphQLRequestPayload<CountriesByCodeRequest>(query: query, variables: variables)
-        request.httpBody = try JSONEncoder().encode(requestPayload)
-
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw URLError(.badServerResponse)
-        }
-        return try jsonDecoder.decode(GraphQLResponsePayload<CountriesByCodeResponse> .self, from: data).data
+        let payload = GraphQLRequestPayload<CountriesByCodeRequest>(query: query, variables: variables)
+        return try await sendRequest(payload: payload)
     }
     public func countriesBy(variables: CountriesByRequest) async throws -> CountriesByResponse {
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         let query = "query CountriesBy($filter: CountryFilterInput!) {\n  countries(filter: $filter) {\n    code\n  }\n}"
-        let requestPayload = GraphQLRequestPayload<CountriesByRequest>(query: query, variables: variables)
-        request.httpBody = try JSONEncoder().encode(requestPayload)
-
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw URLError(.badServerResponse)
-        }
-        return try jsonDecoder.decode(GraphQLResponsePayload<CountriesByResponse> .self, from: data).data
+        let payload = GraphQLRequestPayload<CountriesByRequest>(query: query, variables: variables)
+        return try await sendRequest(payload: payload)
     }
 }

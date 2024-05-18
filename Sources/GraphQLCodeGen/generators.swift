@@ -71,36 +71,18 @@ func generateClientFuncForOperationDefinitionNode(ctx: Context, operation: Opera
         return
             """
             public func \(operationNameToken)(variables: \(requestPayloadToken)) async throws -> \(responsePayloadToken) {
-                var request = URLRequest(url: url)
-                request.httpMethod = "POST"
-                request.addValue("application/json", forHTTPHeaderField: "Content-Type")
                 let query = \(StringLiteralExprSyntax(content: try extractNodeString(ctx: ctx, node: operation)))
-                let requestPayload = GraphQLRequestPayload<\(requestPayloadToken)>(query: query, variables: variables)
-                request.httpBody = try JSONEncoder().encode(requestPayload)
-
-                let (data, response) = try await session.data(for: request)
-                guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                    throw URLError(.badServerResponse)
-                }
-                return try jsonDecoder.decode(GraphQLResponsePayload<\(responsePayloadToken)>.self, from: data).data
+                let payload = GraphQLRequestPayload<\(requestPayloadToken)>(query: query, variables: variables)
+                return try await sendRequest(payload: payload)
             }
             """
     } else {
         return
             """
             public func \(operationNameToken)() async throws -> \(responsePayloadToken) {
-                var request = URLRequest(url: url)
-                request.httpMethod = "POST"
-                request.addValue("application/json", forHTTPHeaderField: "Content-Type")
                 let query = \(StringLiteralExprSyntax(content: try extractNodeString(ctx: ctx, node: operation)))
-                let requestPayload = GraphQLRequestSimplePayload(query: query)
-                request.httpBody = try JSONEncoder().encode(requestPayload)
-
-                let (data, response) = try await session.data(for: request)
-                guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                    throw URLError(.badServerResponse)
-                }
-                return try jsonDecoder.decode(GraphQLResponsePayload<\(responsePayloadToken)>.self, from: data).data
+                let payload = GraphQLRequestSimplePayload(query: query)
+                return try await sendRequest(payload: payload)
             }
             """
     }

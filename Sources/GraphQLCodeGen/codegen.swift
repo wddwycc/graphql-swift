@@ -123,6 +123,21 @@ public func generate(schema: __Schema, documents: [(DocumentNode, String)]) asyn
             )),
             .init(decl: DeclSyntax(
                 """
+                private func sendRequest<RequestPayload: Codable, ResponsePayload: Codable>(payload: RequestPayload) async throws -> ResponsePayload {
+                    var request = URLRequest(url: url)
+                    request.httpMethod = "POST"
+                    request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+                    request.httpBody = try JSONEncoder().encode(payload)
+                    let (data, response) = try await session.data(for: request)
+                    guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                        throw URLError(.badServerResponse)
+                    }
+                    return try jsonDecoder.decode(GraphQLResponsePayload<ResponsePayload> .self, from: data).data
+                }
+                """
+            )),
+            .init(decl: DeclSyntax(
+                """
                 public init() {
                     let config = URLSessionConfiguration.default
                     self.session = URLSession(configuration: config)
@@ -149,7 +164,6 @@ public func generate(schema: __Schema, documents: [(DocumentNode, String)]) asyn
             public let data: T
         }
         """
-
         ClassDeclSyntax(
             modifiers: [DeclModifierSyntax(name: .keyword(.public))],
             name: "GraphQLClient",
