@@ -25,6 +25,10 @@ class CodeGenResponseTests: XCTestCase {
                 public struct Country: Codable {
                     public let code: String
                     public let name: String
+                    /**
+                    country currency.
+                    for example, dollar for the US
+                    */
                     public let currency: String?
                     public let emoji: String
                     public let states: [State]
@@ -61,6 +65,10 @@ class CodeGenResponseTests: XCTestCase {
                 public struct Country: Codable {
                     public let code: String
                     public let name: String
+                    /**
+                    country currency.
+                    for example, dollar for the US
+                    */
                     public let currency: String?
                     public let emoji: String
                     public let states: [State]
@@ -106,6 +114,10 @@ class CodeGenResponseTests: XCTestCase {
                 public struct Country: Codable {
                     public let code: String
                     public let name: String
+                    /**
+                    country currency.
+                    for example, dollar for the US
+                    */
                     public let currency: String?
                     public let emoji: String
                     public let states: [State]
@@ -146,6 +158,10 @@ class CodeGenResponseTests: XCTestCase {
                 public struct Country: Codable {
                     public let code: String
                     public let name: String
+                    /**
+                    country currency.
+                    for example, dollar for the US
+                    */
                     public let currency: String?
                     public let emoji: String
                     public let states: [State]

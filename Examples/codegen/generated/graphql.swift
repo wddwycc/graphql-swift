@@ -9,6 +9,10 @@ public struct CountryFilterInput: Codable {
     public var name: StringQueryOperatorInput?
 }
 public struct LanguageFilterInput: Codable {
+    /**
+     country currency.
+     for example, dollar for the US
+     */
     public var code: StringQueryOperatorInput?
 }
 public struct StringQueryOperatorInput: Codable {

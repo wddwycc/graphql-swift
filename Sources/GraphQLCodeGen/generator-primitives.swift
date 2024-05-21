@@ -148,7 +148,7 @@ func generateStructBody(ctx: Context, schemaType: __Type, selectionSet: Selectio
         if (!declaredProperties.contains(field.name.value)) {
             declaredProperties.insert(field.name.value)
             body.append(MemberBlockItemSyntax(
-                leadingTrivia: fieldInSchema.description.map { "/// \($0)\n" },
+                leadingTrivia: fieldInSchema.description.map(generateCodeComment(description:)),
                 decl: DeclSyntax("public let \(raw: field.name.value): \(swiftType)")
             ))
         }
@@ -171,4 +171,20 @@ func generateStructBody(ctx: Context, schemaType: __Type, selectionSet: Selectio
     return MemberBlockItemListSyntax(body)
 }
 
-
+func generateCodeComment(description: String) -> Trivia {
+    let content: [TriviaPiece] = description
+        .split(separator: "\n", omittingEmptySubsequences: false)
+        .flatMap { a -> [TriviaPiece] in
+            if (a.isEmpty) {
+                return [.newlines(1)]
+            }
+            return [.docLineComment("\(a)"), .newlines(1)]
+        }
+    let pieces: [TriviaPiece] = 
+        [.docBlockComment("/**"), .newlines(1)] 
+        +
+        content 
+        +
+        [.docBlockComment("*/"), .newlines(1)]
+    return Trivia(pieces: pieces)
+}

@@ -408,7 +408,7 @@
         },
         {
           "name": "currency",
-          "description": null,
+          "description": "country currency.\nfor example, dollar for the US",
           "args": [],
           "type": {
             "kind": "SCALAR",

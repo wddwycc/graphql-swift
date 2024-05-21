@@ -55,7 +55,7 @@ private func generateTypesInSchema(ctx: Context) throws -> [DeclSyntaxProtocol] 
                     for field in tp.inputFields ?? [] {
                         let swiftType = try convertSchemaTypeToSwiftType(ctx: ctx, type: field.type)
                         MemberBlockItemSyntax(
-                            leadingTrivia: field.description.map { "/// \($0)\n" },
+                            leadingTrivia: field.description.map(generateCodeComment(description:)),
                             // NOTE: use var here to derive more flexibile initializer for the struct
                             decl: DeclSyntax("public var \(raw: safeFieldName(field.name)): \(swiftType)")
                         )
@@ -73,7 +73,7 @@ private func generateTypesInSchema(ctx: Context) throws -> [DeclSyntaxProtocol] 
                 memberBlockBuilder: {
                     for enumValue in tp.enumValues! {
                         EnumCaseDeclSyntax(
-                            leadingTrivia: enumValue.description.map { "/// \($0)\n" },
+                            leadingTrivia: enumValue.description.map(generateCodeComment(description:)),
                             elements: [EnumCaseElementSyntax(name: TokenSyntax.identifier(enumValue.name))]
                         )
                     }
