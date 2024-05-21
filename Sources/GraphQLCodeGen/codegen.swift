@@ -178,7 +178,12 @@ public func generate(serverUrl: String, schema: __Schema, documents: [DocumentNo
         clientClassFunDecls.map { MemberBlockItemSyntax(decl: $0) }
     )
     var content = SourceFileSyntax {
-        "import Foundation"
+        ImportDeclSyntax(
+            path: [
+                ImportPathComponentSyntax.init(name: TokenSyntax.identifier("Foundation"))
+            ],
+            trailingTrivia: .newlines(2)
+        )
         for schemaTypeDecl in schemaTypeDecls { schemaTypeDecl }
         for operationModelDecl in operationModelDecls { operationModelDecl }
         """
