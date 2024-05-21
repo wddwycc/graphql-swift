@@ -3,9 +3,8 @@
 import SwiftSyntax
 import GraphQLParser
 
-// TODO: Handle all Swift keywords
 func safeFieldName(_ fieldName: String) -> String {
-    if fieldName == "in" {
+    if SwiftKeyword(rawValue: fieldName) != nil {
         return "`\(fieldName)`"
     }
     return fieldName
@@ -149,7 +148,7 @@ func generateStructBody(ctx: Context, schemaType: __Type, selectionSet: Selectio
             declaredProperties.insert(field.name.value)
             body.append(MemberBlockItemSyntax(
                 leadingTrivia: fieldInSchema.description.map(generateCodeComment(description:)),
-                decl: DeclSyntax("public let \(raw: field.name.value): \(swiftType)")
+                decl: DeclSyntax("public let \(raw: safeFieldName(field.name.value)): \(swiftType)")
             ))
         }
         if let nestedSelectionSet = field.selectionSet {

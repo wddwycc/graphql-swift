@@ -27,7 +27,7 @@ func generateRequestModelForOperationDefinitionNode(ctx: Context, operation: Ope
         let swiftType = try convertTypeNodeToSwiftType(ctx: ctx, typeNode: variableDefinition.type)
         return MemberBlockItemSyntax(
             // NOTE: use var here to derive more flexibile initializer for the struct
-            decl: DeclSyntax("public var \(raw: name): \(swiftType)")
+            decl: DeclSyntax("public var \(raw: safeFieldName(name)): \(swiftType)")
         )
     }
     return StructDeclSyntax(

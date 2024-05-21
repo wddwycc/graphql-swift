@@ -74,7 +74,7 @@ private func generateTypesInSchema(ctx: Context) throws -> [DeclSyntaxProtocol] 
                     for enumValue in tp.enumValues! {
                         EnumCaseDeclSyntax(
                             leadingTrivia: enumValue.description.map(generateCodeComment(description:)),
-                            elements: [EnumCaseElementSyntax(name: TokenSyntax.identifier(enumValue.name))]
+                            elements: [EnumCaseElementSyntax(name: TokenSyntax.identifier(safeFieldName(enumValue.name)))]
                         )
                     }
                 }
