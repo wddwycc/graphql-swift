@@ -15,17 +15,19 @@ enum CodegenErrors: Error {
 }
 
 public class Context {
+    let serverUrl: String
     let schema: __Schema
     private let documents: [DocumentNode]
     private let rawDocuments: [String]
 
-    init(schema: __Schema, documents: [DocumentNode], rawDocuments: [String]) {
+    init(serverUrl: String, schema: __Schema, documents: [DocumentNode], rawDocuments: [String]) {
+        self.serverUrl = serverUrl
         self.schema = schema
         self.documents = documents
         self.rawDocuments = rawDocuments
     }
     
-    var cur = -1
+    var cur = 0
     var document: DocumentNode { self.documents[cur] }
     var rawDocument: String { self.rawDocuments[cur] }
 
@@ -84,18 +86,18 @@ private func generateTypesInSchema(ctx: Context) throws -> [DeclSyntaxProtocol] 
     return decls
 }
 
-public func generate(schema: __Schema, query: String) async throws -> String {
+public func generate(serverUrl: String, schema: __Schema, query: String) async throws -> String {
     let parser = try await GraphQLParser()
     let document = try await parser.parse(source: query)
-    return try await generate(schema: schema, documents: [document], rawDocuments: [query])
+    return try await generate(serverUrl: serverUrl, schema: schema, documents: [document], rawDocuments: [query])
 }
 
-public func generate(schema: __Schema, documents: [DocumentNode], rawDocuments: [String]) async throws -> String {
+public func generate(serverUrl: String, schema: __Schema, documents: [DocumentNode], rawDocuments: [String]) async throws -> String {
     var schemaTypeDecls: [DeclSyntaxProtocol] = []
     var operationModelDecls: [StructDeclSyntax] = []
     var clientClassFunDecls:[DeclSyntax] = []
-    let ctx = Context(schema: schema, documents: documents, rawDocuments: rawDocuments)
-    while ctx.next() {
+    let ctx = Context(serverUrl: serverUrl, schema: schema, documents: documents, rawDocuments: rawDocuments)
+    while true {
         let operations = ctx.document.definitions
             .flatMap { a in
                 if case let .executable(e) = a {
@@ -114,13 +116,14 @@ public func generate(schema: __Schema, documents: [DocumentNode], rawDocuments: 
             try generateModelsForOperation(ctx: ctx, operation: $0)
         })
         clientClassFunDecls.append(contentsOf: try operations.map { try generateClientFuncForOperationDefinitionNode(ctx: ctx, operation: $0) })
+        if (!ctx.next()) { break }
     }
     
     let clientClassDecls = MemberBlockItemListSyntax(
         [
             .init(decl: DeclSyntax(
                 """
-                private let url: URL = URL(string: "https://countries.trevorblades.com")!
+                private let url: URL = URL(string: \(StringLiteralExprSyntax(content: ctx.serverUrl)))!
                 """
             )),
             .init(decl: DeclSyntax(
