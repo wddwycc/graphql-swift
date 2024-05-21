@@ -1,0 +1,23 @@
+query AllCountries {
+  countries {
+    code
+    name
+    currency
+    emoji
+    states {
+        name
+    }
+  }
+}
+
+query CountriesByCode($code: String!) {
+  countries(filter: { code: { eq: $code } }) {
+    code
+  }
+}
+
+query CountriesBy($filter: CountryFilterInput!) {
+  countries(filter: $filter) {
+    code
+  }
+}

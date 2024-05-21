@@ -61,3 +61,30 @@ func generateModelsForOperation(ctx: Context, operation: OperationDefinitionNode
     rv.append(try generateResponseModelForOperationDefinitionNode(ctx: ctx, operation: operation))
     return rv
 }
+
+func generateClientFuncForOperationDefinitionNode(ctx: Context, operation: OperationDefinitionNode) throws -> DeclSyntax {
+    let operationNameToken = TokenSyntax.identifier(operation.name!.value.firstLetterLowercased())
+    let requestPayloadToken = TokenSyntax.identifier(operation.name!.value + "Request")
+    let responsePayloadToken = TokenSyntax.identifier(operation.name!.value + "Response")
+    
+    if let variableDefinitions = operation.variableDefinitions, variableDefinitions.count > 0 {
+        return
+            """
+            public func \(operationNameToken)(variables: \(requestPayloadToken)) async throws -> \(responsePayloadToken) {
+                let query = \(StringLiteralExprSyntax(content: try extractNodeString(ctx: ctx, node: operation)))
+                let payload = GraphQLRequestPayload<\(requestPayloadToken)>(query: query, variables: variables)
+                return try await sendRequest(payload: payload)
+            }
+            """
+    } else {
+        return
+            """
+            public func \(operationNameToken)() async throws -> \(responsePayloadToken) {
+                let query = \(StringLiteralExprSyntax(content: try extractNodeString(ctx: ctx, node: operation)))
+                let payload = GraphQLRequestSimplePayload(query: query)
+                return try await sendRequest(payload: payload)
+            }
+            """
+    }
+}
+

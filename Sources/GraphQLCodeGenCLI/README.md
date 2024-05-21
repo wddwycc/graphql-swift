@@ -1,6 +1,6 @@
 # GraphQL Code Generator
 
-This is a GraphQL Code Generator, similar to [dotansimha/graphql-code-generator](https://github.com/dotansimha/graphql-code-generator), can be used to generate Swift Codable models for GraphQL request and response payload. 
+This is a GraphQL Code Generator, similar to [dotansimha/graphql-code-generator](https://github.com/dotansimha/graphql-code-generator), it generates a `GraphQLClient` alongside with request and response models based on local graphql queries. 
 
 > Since project is still in its eary stage, I can't guarantee this CLI tool will be free of breaking changes.
 

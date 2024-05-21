@@ -3,7 +3,6 @@ import XCTest
 
 class IntrospectionTests: XCTestCase {
     func testSendIntrospectionRequest() async throws {
-        let schema = try await sendIntrospectionRequest(url: "https://countries.trevorblades.com")
-        debugPrint(schema)
+        let _ = try await sendIntrospectionRequest(url: "https://countries.trevorblades.com")
     }
 }

@@ -27,18 +27,19 @@ struct GraphQLCodeGenCommand: AsyncParsableCommand {
         let fileManager = FileManager.default
         let currentPath = FileManager.default.currentDirectoryPath
         let documentsFolderURL = URL(fileURLWithPath: currentPath).appendingPathComponent(documents)
-        let documents = try fileManager.contentsOfDirectory(at: documentsFolderURL, includingPropertiesForKeys: nil)
+        let documentURLs = try fileManager.contentsOfDirectory(at: documentsFolderURL, includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == "graphql" }
         // STEP3: Parse and generate code
         let parser = try await GraphQLParser()
-        var nodes: [DocumentNode] = []
-        for document in documents {
-            let content = try String(contentsOf: document, encoding: .utf8)
-            let documentNode = try await parser.parse(source: content)
-            nodes.append(documentNode)
+        var documents: [DocumentNode] = []
+        var rawDocuments: [String] = []
+        for documentURL in documentURLs {
+            let content = try String(contentsOf: documentURL, encoding: .utf8)
+            let document = try await parser.parse(source: content)
+            documents.append(document)
+            rawDocuments.append(content)
         }
-        let mergedDocument = DocumentNode(loc: nil, definitions: nodes.flatMap { $0.definitions })
-        let generatedCode = try await generate(schema: schema, document: mergedDocument)
+        let generatedCode = try await generate(serverUrl: self.schema, schema: schema, documents: documents, rawDocuments: rawDocuments)
         // STEP4: Write generated code to target folder
         let outputFolderURL = URL(fileURLWithPath: currentPath).appendingPathComponent(output)
         try generatedCode.write(to: outputFolderURL.appendingPathComponent("graphql.swift", isDirectory: false), atomically: true, encoding: .utf8)

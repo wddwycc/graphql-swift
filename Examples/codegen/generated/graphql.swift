@@ -1,3 +1,4 @@
+import Foundation
 public struct ContinentFilterInput: Codable {
     public var code: StringQueryOperatorInput?
 }
@@ -74,37 +75,6 @@ public enum __TypeKind: String, Codable {
     case LIST
     /// Indicates this type is a non-null. `ofType` is a valid field.
     case NON_NULL
-}
-public struct AllCountriesResponse: Codable {
-    public let countries: [Country]
-    public struct Country: Codable {
-        public let code: String
-        public let name: String
-        public let currency: String?
-        public let emoji: String
-        public let states: [State]
-        public struct State: Codable {
-            public let name: String
-        }
-    }
-}
-public struct CountriesByCodeRequest: Codable {
-    public var code: String
-}
-public struct CountriesByCodeResponse: Codable {
-    public let countries: [Country]
-    public struct Country: Codable {
-        public let code: String
-    }
-}
-public struct CountriesByRequest: Codable {
-    public var filter: CountryFilterInput
-}
-public struct CountriesByResponse: Codable {
-    public let countries: [Country]
-    public struct Country: Codable {
-        public let code: String
-    }
 }
 public struct IntrospectionQueryResponse: Codable {
     public let __schema: __Schema?
@@ -188,5 +158,92 @@ public struct IntrospectionQueryResponse: Codable {
                 public let deprecationReason: String?
             }
         }
+    }
+}
+public struct AllCountriesResponse: Codable {
+    public let countries: [Country]
+    public struct Country: Codable {
+        public let code: String
+        public let name: String
+        public let currency: String?
+        public let emoji: String
+        public let states: [State]
+        public struct State: Codable {
+            public let name: String
+        }
+    }
+}
+public struct CountriesByCodeRequest: Codable {
+    public var code: String
+}
+public struct CountriesByCodeResponse: Codable {
+    public let countries: [Country]
+    public struct Country: Codable {
+        public let code: String
+    }
+}
+public struct CountriesByRequest: Codable {
+    public var filter: CountryFilterInput
+}
+public struct CountriesByResponse: Codable {
+    public let countries: [Country]
+    public struct Country: Codable {
+        public let code: String
+    }
+}
+public struct GraphQLRequestSimplePayload: Codable {
+    public let query: String
+}
+public struct GraphQLRequestPayload<T: Codable>: Codable {
+    public let query: String
+    public let variables: T
+}
+public struct GraphQLResponsePayload<T: Codable>: Codable {
+    public let data: T
+}
+public class GraphQLClient {
+    private let url: URL = URL(string: "https://countries.trevorblades.com")!
+    private let session: URLSession
+    private let jsonDecoder = JSONDecoder()
+    private var requestInterceptor: ((inout URLRequest) -> Void)?
+    /// Set custom request interceptor, the given closure would run before every request is sent. Most common use case is add authentication header
+    public func setRequestInterceptor(_ interceptor: @escaping (inout URLRequest) -> Void) {
+        self.requestInterceptor = interceptor
+    }
+    public init() {
+        let config = URLSessionConfiguration.default
+        self.session = URLSession(configuration: config)
+    }
+    private func sendRequest<RequestPayload: Codable, ResponsePayload: Codable>(payload: RequestPayload) async throws -> ResponsePayload {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(payload)
+        requestInterceptor?(&request)
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+        return try jsonDecoder.decode(GraphQLResponsePayload<ResponsePayload> .self, from: data).data
+    }
+    public func introspectionQuery() async throws -> IntrospectionQueryResponse {
+        let query = "query IntrospectionQuery {\n  __schema {\n    description\n    queryType { name }\n    mutationType { name }\n    subscriptionType { name }\n    types {\n      ...FullType\n    }\n    directives {\n      name\n      description\n      isRepeatable\n      locations\n      args(includeDeprecated: true) {\n        ...InputValue\n      }\n    }\n  }\n}"
+        let payload = GraphQLRequestSimplePayload(query: query)
+        return try await sendRequest(payload: payload)
+    }
+    public func allCountries() async throws -> AllCountriesResponse {
+        let query = "query AllCountries {\n  countries {\n    code\n    name\n    currency\n    emoji\n    states {\n        name\n    }\n  }\n}"
+        let payload = GraphQLRequestSimplePayload(query: query)
+        return try await sendRequest(payload: payload)
+    }
+    public func countriesByCode(variables: CountriesByCodeRequest) async throws -> CountriesByCodeResponse {
+        let query = "query CountriesByCode($code: String!) {\n  countries(filter: { code: { eq: $code } }) {\n    code\n  }\n}"
+        let payload = GraphQLRequestPayload<CountriesByCodeRequest>(query: query, variables: variables)
+        return try await sendRequest(payload: payload)
+    }
+    public func countriesBy(variables: CountriesByRequest) async throws -> CountriesByResponse {
+        let query = "query CountriesBy($filter: CountryFilterInput!) {\n  countries(filter: $filter) {\n    code\n  }\n}"
+        let payload = GraphQLRequestPayload<CountriesByRequest>(query: query, variables: variables)
+        return try await sendRequest(payload: payload)
     }
 }
