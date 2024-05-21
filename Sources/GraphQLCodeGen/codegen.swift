@@ -16,13 +16,25 @@ enum CodegenErrors: Error {
 
 public class Context {
     let schema: __Schema
-    let document: DocumentNode
-    let rawDocument: String
-    
-    init(schema: __Schema, document: DocumentNode, rawDocument: String) {
+    private let documents: [DocumentNode]
+    private let rawDocuments: [String]
+
+    init(schema: __Schema, documents: [DocumentNode], rawDocuments: [String]) {
         self.schema = schema
-        self.document = document
-        self.rawDocument = rawDocument
+        self.documents = documents
+        self.rawDocuments = rawDocuments
+    }
+    
+    var cur = -1
+    var document: DocumentNode { self.documents[cur] }
+    var rawDocument: String { self.rawDocuments[cur] }
+
+    func next() -> Bool {
+        if cur + 1 < documents.count {
+            cur += 1
+            return true
+        }
+        return false
     }
 }
 
@@ -75,16 +87,16 @@ private func generateTypesInSchema(ctx: Context) throws -> [DeclSyntaxProtocol] 
 public func generate(schema: __Schema, query: String) async throws -> String {
     let parser = try await GraphQLParser()
     let document = try await parser.parse(source: query)
-    return try await generate(schema: schema, documents: [(document, query)])
+    return try await generate(schema: schema, documents: [document], rawDocuments: [query])
 }
 
-public func generate(schema: __Schema, documents: [(DocumentNode, String)]) async throws -> String {
+public func generate(schema: __Schema, documents: [DocumentNode], rawDocuments: [String]) async throws -> String {
     var schemaTypeDecls: [DeclSyntaxProtocol] = []
     var operationModelDecls: [StructDeclSyntax] = []
     var clientClassFunDecls:[DeclSyntax] = []
-    for (document, rawDocument) in documents {
-        let ctx = Context(schema: schema, document: document, rawDocument: rawDocument)
-        let operations = document.definitions
+    let ctx = Context(schema: schema, documents: documents, rawDocuments: rawDocuments)
+    while ctx.next() {
+        let operations = ctx.document.definitions
             .flatMap { a in
                 if case let .executable(e) = a {
                     return [e]

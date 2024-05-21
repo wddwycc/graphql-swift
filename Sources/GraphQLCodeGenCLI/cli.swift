@@ -31,13 +31,15 @@ struct GraphQLCodeGenCommand: AsyncParsableCommand {
             .filter { $0.pathExtension == "graphql" }
         // STEP3: Parse and generate code
         let parser = try await GraphQLParser()
-        var documentNodes: [(DocumentNode, String)] = []
+        var documents: [DocumentNode] = []
+        var rawDocuments: [String] = []
         for documentURL in documentURLs {
             let content = try String(contentsOf: documentURL, encoding: .utf8)
-            let documentNode = try await parser.parse(source: content)
-            documentNodes.append((documentNode, content))
+            let document = try await parser.parse(source: content)
+            documents.append(document)
+            rawDocuments.append(content)
         }
-        let generatedCode = try await generate(schema: schema, documents: documentNodes)
+        let generatedCode = try await generate(schema: schema, documents: documents, rawDocuments: rawDocuments)
         // STEP4: Write generated code to target folder
         let outputFolderURL = URL(fileURLWithPath: currentPath).appendingPathComponent(output)
         try generatedCode.write(to: outputFolderURL.appendingPathComponent("graphql.swift", isDirectory: false), atomically: true, encoding: .utf8)
