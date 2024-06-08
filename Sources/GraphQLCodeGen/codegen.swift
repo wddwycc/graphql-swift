@@ -51,7 +51,7 @@ class Context {
 }
 
 func generateVisitedTypes(ctx: Context) throws -> [DeclSyntaxProtocol] {
-    var decls: [DeclSyntaxProtocol] = []
+    var decls: [String: DeclSyntaxProtocol] = [:]
     while let tpName = ctx.visitedTypes.popFirst() {
         guard let tp = ctx.schema.types.first(where: { $0.name == tpName }) else {
             throw CodegenErrors.invalidType(tpName)
@@ -68,9 +68,9 @@ func generateVisitedTypes(ctx: Context) throws -> [DeclSyntaxProtocol] {
                     ctx.visitedTypes.insert(name)
                 }
             }
-            decls.append(try StructDeclSyntax(
+            decls[tpName] = try StructDeclSyntax(
                 modifiers: [DeclModifierSyntax(name: .keyword(.public))],
-                name: TokenSyntax.identifier(tp.name!),
+                name: TokenSyntax.identifier(tpName),
                 inheritanceClause: InheritanceClauseSyntax.init(inheritedTypes: [
                     .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("Codable"))),
                 ]),
@@ -84,11 +84,11 @@ func generateVisitedTypes(ctx: Context) throws -> [DeclSyntaxProtocol] {
                         )
                     }
                 }
-            ))
+            )
         case .ENUM:
-            decls.append(EnumDeclSyntax(
+            decls[tpName] = EnumDeclSyntax(
                 modifiers: [DeclModifierSyntax(name: .keyword(.public))],
-                name: TokenSyntax.identifier(tp.name!),
+                name: TokenSyntax.identifier(tpName),
                 inheritanceClause: InheritanceClauseSyntax.init(inheritedTypes: [
                     .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("String")), trailingComma: TokenSyntax.commaToken()),
                     .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("Codable"))),
@@ -101,20 +101,23 @@ func generateVisitedTypes(ctx: Context) throws -> [DeclSyntaxProtocol] {
                         )
                     }
                 }
-            ))
+            )
         default:
             break
         }
     }
-    return decls
+    return decls.sorted(by: { $0.key < $1.key }).map { $0.value }
 }
 
 func generatePrompt(ctx: Context) -> String {
     var content: [String] = []
+    content.append("Successfully generated code!")
+    
     let requiredCustomScalars = ctx.requiredCustomScalars.enumerated()
         .sorted(by: { $0.element.key < $1.element.key })
         .map { $0.element }
     if (requiredCustomScalars.count > 0) {
+        content.append("")
         content.append("Please implement custom scalars:")
         for (name, (desc, specifiedByURL)) in requiredCustomScalars {
             var line = "- \(name)"
