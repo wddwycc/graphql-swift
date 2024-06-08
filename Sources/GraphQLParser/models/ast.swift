@@ -5,6 +5,7 @@
 public protocol ASTNode {
     var kind: Kind { get }
     var loc: Location? { get }
+    var children: [ASTNode] { get }
 }
 
 public protocol ProxyNode {
@@ -22,6 +23,8 @@ public class NameNode: ASTNode, Decodable {
         self.loc = loc
         self.value = value
     }
+    
+    public var children: [any ASTNode] { [] }
 }
 
 // MARK: Document
@@ -35,6 +38,8 @@ public class DocumentNode: ASTNode, Decodable {
         self.loc = loc
         self.definitions = definitions
     }
+    
+    public var children: [any ASTNode] { definitions.map(\.node) }
 }
 
 public enum DefinitionNode: ProxyNode, Decodable {
@@ -142,6 +147,15 @@ public class OperationDefinitionNode: ASTNode, Decodable {
         self.directives = directives
         self.selectionSet = selectionSet
     }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let name { rv.append(name) }
+        if let variableDefinitions { rv.append(contentsOf: variableDefinitions) }
+        if let directives { rv.append(contentsOf: directives) }
+        rv.append(selectionSet)
+        return rv
+    }
 }
 
 public enum OperationTypeNode: String, Decodable {
@@ -167,6 +181,15 @@ public class VariableDefinitionNode: ASTNode, Decodable {
         self.defaultValue = defaultValue
         self.directives = directives
     }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        rv.append(variable)
+        rv.append(type.node)
+        if let defaultValue { rv.append(defaultValue.node) }
+        if let directives { rv.append(contentsOf: directives) }
+        return rv
+    }
 }
 
 public class VariableNode: ASTNode, Decodable {
@@ -179,6 +202,8 @@ public class VariableNode: ASTNode, Decodable {
         self.loc = loc
         self.name = name
     }
+    
+    public var children: [any ASTNode] { [name] }
 }
 
 public class SelectionSetNode: ASTNode, Decodable {
@@ -191,6 +216,8 @@ public class SelectionSetNode: ASTNode, Decodable {
         self.loc = loc
         self.selections = selections
     }
+    
+    public var children: [any ASTNode] { selections.map(\.node) }
 }
 
 public enum SelectionNode: ProxyNode, Decodable {
@@ -201,7 +228,6 @@ public enum SelectionNode: ProxyNode, Decodable {
     private enum CodingKeys: String, CodingKey {
         case kind
     }
-    
     
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -245,6 +271,16 @@ public class FieldNode: ASTNode, Decodable {
         self.directives = directives
         self.selectionSet = selectionSet
     }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let alias { rv.append(alias) }
+        rv.append(name)
+        if let arguments { rv.append(contentsOf: arguments) }
+        if let directives { rv.append(contentsOf: directives) }
+        if let selectionSet { rv.append(selectionSet) }
+        return rv
+    }
 }
 
 public class ArgumentNode: ASTNode, Decodable {
@@ -258,6 +294,13 @@ public class ArgumentNode: ASTNode, Decodable {
         self.name = name
         self.value = value
     }
+    
+    public var children: [any ASTNode] {
+        [
+            name,
+            value.node
+        ]
+    }
 }
 
 public class ConstArgumentNode: ASTNode, Decodable {
@@ -270,6 +313,13 @@ public class ConstArgumentNode: ASTNode, Decodable {
         self.loc = loc
         self.name = name
         self.value = value
+    }
+    
+    public var children: [any ASTNode] {
+        [
+            name,
+            value.node,
+        ]
     }
 }
 
@@ -286,6 +336,13 @@ public class FragmentSpreadNode: ASTNode, Decodable {
         self.name = name
         self.directives = directives
     }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        rv.append(name)
+        if let directives { rv.append(contentsOf: directives) }
+        return rv
+    }
 }
 
 public class InlineFragmentNode: ASTNode, Decodable {
@@ -300,6 +357,14 @@ public class InlineFragmentNode: ASTNode, Decodable {
         self.typeCondition = typeCondition
         self.directives = directives
         self.selectionSet = selectionSet
+    }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let typeCondition { rv.append(typeCondition) }
+        if let directives { rv.append(contentsOf: directives) }
+        rv.append(selectionSet)
+        return rv
     }
 }
 
@@ -319,6 +384,16 @@ public class FragmentDefinitionNode: ASTNode, Decodable {
         self.typeCondition = typeCondition
         self.directives = directives
         self.selectionSet = selectionSet
+    }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        rv.append(name)
+        if let variableDefinitions { rv.append(contentsOf: variableDefinitions) }
+        rv.append(typeCondition)
+        if let directives { rv.append(contentsOf: directives) }
+        rv.append(selectionSet)
+        return rv
     }
 }
 
@@ -445,6 +520,8 @@ public class IntValueNode: ASTNode, Decodable {
         self.loc = loc
         self.value = value
     }
+    
+    public var children: [any ASTNode] { [] }
 }
 
 public class FloatValueNode: ASTNode, Decodable {
@@ -456,6 +533,8 @@ public class FloatValueNode: ASTNode, Decodable {
         self.loc = loc
         self.value = value
     }
+    
+    public var children: [any ASTNode] { [] }
 }
 
 public class StringValueNode: ASTNode, Decodable {
@@ -469,6 +548,8 @@ public class StringValueNode: ASTNode, Decodable {
         self.value = value
         self.block = block
     }
+    
+    public var children: [any ASTNode] { [] }
 }
 
 public class BooleanValueNode: ASTNode, Decodable {
@@ -480,6 +561,8 @@ public class BooleanValueNode: ASTNode, Decodable {
         self.loc = loc
         self.value = value
     }
+    
+    public var children: [any ASTNode] { [] }
 }
 
 public class NullValueNode: ASTNode, Decodable {
@@ -489,6 +572,8 @@ public class NullValueNode: ASTNode, Decodable {
     public init(loc: Location?) {
         self.loc = loc
     }
+    
+    public var children: [any ASTNode] { [] }
 }
 
 public class EnumValueNode: ASTNode, Decodable {
@@ -500,6 +585,8 @@ public class EnumValueNode: ASTNode, Decodable {
         self.loc = loc
         self.value = value
     }
+    
+    public var children: [any ASTNode] { [] }
 }
 
 public class ListValueNode: ASTNode, Decodable {
@@ -511,6 +598,8 @@ public class ListValueNode: ASTNode, Decodable {
         self.loc = loc
         self.values = values
     }
+    
+    public var children: [any ASTNode] { values.map(\.node) }
 }
 
 public class ConstListValueNode: ASTNode, Decodable {
@@ -522,6 +611,8 @@ public class ConstListValueNode: ASTNode, Decodable {
         self.loc = loc
         self.values = values
     }
+    
+    public var children: [any ASTNode] { values.map(\.node) }
 }
 
 public class ObjectValueNode: ASTNode, Decodable {
@@ -533,6 +624,8 @@ public class ObjectValueNode: ASTNode, Decodable {
         self.loc = loc
         self.fields = fields
     }
+    
+    public var children: [any ASTNode] { fields }
 }
 
 public class ConstObjectValueNode: ASTNode, Decodable {
@@ -544,6 +637,8 @@ public class ConstObjectValueNode: ASTNode, Decodable {
         self.loc = loc
         self.fields = fields
     }
+    
+    public var children: [any ASTNode] { fields }
 }
 
 public class ObjectFieldNode: ASTNode, Decodable {
@@ -557,6 +652,8 @@ public class ObjectFieldNode: ASTNode, Decodable {
         self.name = name
         self.value = value
     }
+    
+    public var children: [any ASTNode] { [name, value.node] }
 }
 
 public class ConstObjectFieldNode: ASTNode, Decodable {
@@ -570,6 +667,8 @@ public class ConstObjectFieldNode: ASTNode, Decodable {
         self.name = name
         self.value = value
     }
+    
+    public var children: [any ASTNode] { [name, value.node] }
 }
 
 /** Directives */
@@ -585,6 +684,13 @@ public class DirectiveNode: ASTNode, Decodable {
         self.name = name
         self.arguments = arguments
     }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        rv.append(name)
+        if let arguments { rv.append(contentsOf: arguments) }
+        return rv
+    }
 }
 
 public class ConstDirectiveNode: ASTNode, Decodable {
@@ -598,11 +704,18 @@ public class ConstDirectiveNode: ASTNode, Decodable {
         self.name = name
         self.arguments = arguments
     }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        rv.append(name)
+        if let arguments { rv.append(contentsOf: arguments) }
+        return rv
+    }
 }
 
 // MARK: Type Reference
 
-public indirect enum TypeNode: Decodable {
+public indirect enum TypeNode: ProxyNode, Decodable {
     case named(NamedTypeNode)
     case list(ListTypeNode)
     case nonNull(NonNullTypeNode)
@@ -626,6 +739,14 @@ public indirect enum TypeNode: Decodable {
             throw DecodingError.dataCorruptedError(forKey: .kind, in: container, debugDescription: "Unsupported kind for TypeNode")
         }
     }
+    
+    public var node: any ASTNode {
+        switch self {
+        case .named(let a): return a
+        case .list(let a): return a
+        case .nonNull(let a): return a
+        }
+    }
 }
 
 public class NamedTypeNode: ASTNode, Decodable {
@@ -637,6 +758,8 @@ public class NamedTypeNode: ASTNode, Decodable {
         self.loc = loc
         self.name = name
     }
+    
+    public var children: [any ASTNode] { [name] }
 }
 
 public class ListTypeNode: ASTNode, Decodable {
@@ -648,6 +771,8 @@ public class ListTypeNode: ASTNode, Decodable {
         self.loc = loc
         self.type = type
     }
+    
+    public var children: [any ASTNode] { [type.node] }
 }
 
 public class NonNullTypeNode: ASTNode, Decodable {
@@ -659,6 +784,8 @@ public class NonNullTypeNode: ASTNode, Decodable {
         self.loc = loc
         self.type = type
     }
+    
+    public var children: [any ASTNode] { [type.node] }
 }
 
 // MARK: Type System Definition
@@ -710,6 +837,14 @@ public class SchemaDefinitionNode: ASTNode, Decodable {
         self.directives = directives
         self.operationTypes = operationTypes
     }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let description { rv.append(description) }
+        if let directives { rv.append(contentsOf: directives) }
+        rv.append(contentsOf: operationTypes)
+        return rv
+    }
 }
 
 public class OperationTypeDefinitionNode: ASTNode, Decodable {
@@ -723,6 +858,8 @@ public class OperationTypeDefinitionNode: ASTNode, Decodable {
         self.operation = operation
         self.type = type
     }
+    
+    public var children: [any ASTNode] { [type] }
 }
 
 // MARK: Type Definition
@@ -792,6 +929,14 @@ public class ScalarTypeDefinitionNode: ASTNode, Decodable {
         self.name = name
         self.directives = directives
     }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let description { rv.append(description) }
+        rv.append(name)
+        if let directives { rv.append(contentsOf: directives) }
+        return rv
+    }
 }
 
 public class ObjectTypeDefinitionNode: ASTNode, Decodable {
@@ -810,6 +955,16 @@ public class ObjectTypeDefinitionNode: ASTNode, Decodable {
         self.interfaces = interfaces
         self.directives = directives
         self.fields = fields
+    }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let description { rv.append(description) }
+        rv.append(name)
+        if let interfaces { rv.append(contentsOf: interfaces) }
+        if let directives { rv.append(contentsOf: directives) }
+        if let fields { rv.append(contentsOf: fields) }
+        return rv
     }
 }
 
@@ -830,6 +985,16 @@ public class InterfaceTypeDefinitionNode: ASTNode, Decodable {
         self.directives = directives
         self.fields = fields
     }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let description { rv.append(description) }
+        rv.append(name)
+        if let interfaces { rv.append(contentsOf: interfaces) }
+        if let directives { rv.append(contentsOf: directives) }
+        if let fields { rv.append(contentsOf: fields) }
+        return rv
+    }
 }
 
 public class UnionTypeDefinitionNode: ASTNode, Decodable {
@@ -846,6 +1011,15 @@ public class UnionTypeDefinitionNode: ASTNode, Decodable {
         self.name = name
         self.directives = directives
         self.types = types
+    }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let description { rv.append(description) }
+        rv.append(name)
+        if let directives { rv.append(contentsOf: directives) }
+        rv.append(contentsOf: types)
+        return rv
     }
 }
 
@@ -864,6 +1038,15 @@ public class EnumTypeDefinitionNode: ASTNode, Decodable {
         self.directives = directives
         self.values = values
     }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let description { rv.append(description) }
+        rv.append(name)
+        if let directives { rv.append(contentsOf: directives) }
+        rv.append(contentsOf: values)
+        return rv
+    }
 }
 
 public class EnumValueDefinitionNode: ASTNode, Decodable {
@@ -878,6 +1061,14 @@ public class EnumValueDefinitionNode: ASTNode, Decodable {
         self.description = description
         self.name = name
         self.directives = directives
+    }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let description { rv.append(description) }
+        rv.append(name)
+        if let directives { rv.append(contentsOf: directives) }
+        return rv
     }
 }
 
@@ -895,6 +1086,15 @@ public class InputObjectTypeDefinitionNode: ASTNode, Decodable {
         self.name = name
         self.directives = directives
         self.fields = fields
+    }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let description { rv.append(description) }
+        rv.append(name)
+        if let directives { rv.append(contentsOf: directives) }
+        rv.append(contentsOf: fields)
+        return rv
     }
 }
 
@@ -915,6 +1115,16 @@ public class FieldDefinitionNode: ASTNode, Decodable {
         self.type = type
         self.directives = directives
     }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let description { rv.append(description) }
+        rv.append(name)
+        if let arguments { rv.append(contentsOf: arguments) }
+        rv.append(type.node)
+        if let directives { rv.append(contentsOf: directives) }
+        return rv
+    }
 }
 
 public class InputValueDefinitionNode: ASTNode, Decodable {
@@ -933,6 +1143,16 @@ public class InputValueDefinitionNode: ASTNode, Decodable {
         self.type = type
         self.defaultValue = defaultValue
         self.directives = directives
+    }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let description { rv.append(description) }
+        rv.append(name)
+        rv.append(type.node)
+        if let defaultValue { rv.append(defaultValue.node) }
+        if let directives { rv.append(contentsOf: directives) }
+        return rv
     }
 }
 
@@ -954,6 +1174,15 @@ public class DirectiveDefinitionNode: ASTNode, Decodable {
         self.arguments = arguments
         self.repeatable = repeatable
         self.locations = locations
+    }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let description { rv.append(description) }
+        rv.append(name)
+        rv.append(contentsOf: arguments)
+        rv.append(contentsOf: locations)
+        return rv
     }
 }
 
@@ -1005,6 +1234,13 @@ public class SchemaExtensionNode: ASTNode, Decodable {
         self.loc = loc
         self.directives = directives
         self.operationTypes = operationTypes
+    }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        if let directives { rv.append(contentsOf: directives) }
+        rv.append(contentsOf: operationTypes)
+        return rv
     }
 }
 
@@ -1073,6 +1309,13 @@ public class ScalarTypeExtensionNode: ASTNode, Decodable {
         self.name = name
         self.directives = directives
     }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        rv.append(name)
+        if let directives { rv.append(contentsOf: directives) }
+        return rv
+    }
 }
 
 public class ObjectTypeExtensionNode: ASTNode, Decodable {
@@ -1089,6 +1332,15 @@ public class ObjectTypeExtensionNode: ASTNode, Decodable {
         self.interfaces = interfaces
         self.directives = directives
         self.fields = fields
+    }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        rv.append(name)
+        if let interfaces { rv.append(contentsOf: interfaces) }
+        if let directives { rv.append(contentsOf: directives) }
+        if let fields { rv.append(contentsOf: fields) }
+        return rv
     }
 }
 
@@ -1107,6 +1359,15 @@ public class InterfaceTypeExtensionNode: ASTNode, Decodable {
         self.directives = directives
         self.fields = fields
     }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        rv.append(name)
+        if let interfaces { rv.append(contentsOf: interfaces) }
+        if let directives { rv.append(contentsOf: directives) }
+        if let fields { rv.append(contentsOf: fields) }
+        return rv
+    }
 }
 
 public class UnionTypeExtensionNode: ASTNode, Decodable {
@@ -1121,6 +1382,14 @@ public class UnionTypeExtensionNode: ASTNode, Decodable {
         self.name = name
         self.directives = directives
         self.types = types
+    }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        rv.append(name)
+        if let directives { rv.append(contentsOf: directives) }
+        rv.append(contentsOf: types)
+        return rv
     }
 }
 
@@ -1137,6 +1406,14 @@ public class EnumTypeExtensionNode: ASTNode, Decodable {
         self.directives = directives
         self.values = values
     }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        rv.append(name)
+        if let directives { rv.append(contentsOf: directives) }
+        rv.append(contentsOf: values)
+        return rv
+    }
 }
 
 public class InputObjectTypeExtensionNode: ASTNode, Decodable {
@@ -1151,5 +1428,13 @@ public class InputObjectTypeExtensionNode: ASTNode, Decodable {
         self.name = name
         self.directives = directives
         self.fields = fields
+    }
+    
+    public var children: [any ASTNode] {
+        var rv: [ASTNode] = []
+        rv.append(name)
+        if let directives { rv.append(contentsOf: directives) }
+        rv.append(contentsOf: fields)
+        return rv
     }
 }
