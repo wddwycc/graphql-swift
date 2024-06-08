@@ -4,7 +4,7 @@ import SwiftSyntax
 import GraphQLParser
 
 func safeFieldName(_ fieldName: String) -> String {
-    if SwiftKeyword(rawValue: fieldName) != nil {
+    if isSwiftKeyword(fieldName) {
         return "`\(fieldName)`"
     }
     return fieldName
@@ -24,18 +24,9 @@ func convertSchemaTypeToSwiftType(ctx: Context, type: __Type, nonNull: Bool = fa
     let tp: TypeSyntaxProtocol
     switch type.kind {
     case .SCALAR:
-        // Ref: https://spec.graphql.org/October2021/#sec-Scalars
-        switch type.name {
-        // Built-in Scalars
-        case "Int":
-            tp = IdentifierTypeSyntax(name: TokenSyntax.identifier("Int64"))
-        case "Float":
-            tp = IdentifierTypeSyntax(name: TokenSyntax.identifier("Float64"))
-        case "String", "ID":
-            tp = IdentifierTypeSyntax(name: TokenSyntax.identifier("String"))
-        case "Boolean":
-            tp = IdentifierTypeSyntax(name: TokenSyntax.identifier("Bool"))
-        default:
+        if let scalarType = GraphQLBuiltInScalarType(rawValue: type.name!) {
+            tp = IdentifierTypeSyntax(name: TokenSyntax.identifier(scalarType.swiftType))
+        } else {
             // TODO: Support custom scalars
             // https://spec.graphql.org/October2021/#sec-Scalars.Custom-Scalars
             throw CodegenErrors.TODO
@@ -67,7 +58,7 @@ func convertSchemaTypeToSwiftType(ctx: Context, type: __Type, nonNull: Bool = fa
     return OptionalTypeSyntax(wrappedType: tp)
 }
 
-private func getWrappedObjectType(ctx: Context, type: __Type) throws -> __Type {
+func getWrappedType(ctx: Context, type: __Type) throws -> __Type {
     switch type.kind {
     case .SCALAR:
         throw CodegenErrors.TODO
@@ -75,19 +66,19 @@ private func getWrappedObjectType(ctx: Context, type: __Type) throws -> __Type {
         guard let name = type.name else { throw CodegenErrors.invalidType("Expect name for OBJECT type") }
         return ctx.schema.types.first(where: { $0.name == name })!
     case .INTERFACE:
-        throw CodegenErrors.TODO
+        return type
     case .UNION:
-        throw CodegenErrors.TODO
+        return type
     case .ENUM:
-        throw CodegenErrors.TODO
+        return type
     case .INPUT_OBJECT:
-        throw CodegenErrors.TODO
+        return type
     case .LIST:
         guard let ofType = type.ofType else { throw CodegenErrors.invalidType("Missing `ofType` for LIST type") }
-        return try getWrappedObjectType(ctx: ctx, type: ofType)
+        return try getWrappedType(ctx: ctx, type: ofType)
     case .NON_NULL:
         guard let ofType = type.ofType else { throw CodegenErrors.invalidType("Missing `ofType` for NON_NULL type") }
-        return try getWrappedObjectType(ctx: ctx, type: ofType)
+        return try getWrappedType(ctx: ctx, type: ofType)
     }
 
 }
@@ -152,16 +143,16 @@ func generateStructBody(ctx: Context, schemaType: __Type, selectionSet: Selectio
             ))
         }
         if let nestedSelectionSet = field.selectionSet {
-            let wrappedObjectType = try getWrappedObjectType(ctx: ctx, type: fieldInSchema.type)
-            if (!declaredStructs.contains(wrappedObjectType.name!)) {
-                declaredStructs.insert(wrappedObjectType.name!)
+            let wrappedType = try getWrappedType(ctx: ctx, type: fieldInSchema.type)
+            if (!declaredStructs.contains(wrappedType.name!)) {
+                declaredStructs.insert(wrappedType.name!)
                 body.append(MemberBlockItemSyntax(decl: StructDeclSyntax(
                     modifiers: [DeclModifierSyntax(name: .keyword(.public))],
-                    name: TokenSyntax.identifier(wrappedObjectType.name!),
+                    name: TokenSyntax.identifier(wrappedType.name!),
                     inheritanceClause: InheritanceClauseSyntax.init(inheritedTypes: [
                         .init(type: IdentifierTypeSyntax(name: TokenSyntax.identifier("Codable"))),
                     ]),
-                    memberBlock: MemberBlockSyntax(members: try generateStructBody(ctx: ctx, schemaType: wrappedObjectType, selectionSet: nestedSelectionSet))
+                    memberBlock: MemberBlockSyntax(members: try generateStructBody(ctx: ctx, schemaType: wrappedType, selectionSet: nestedSelectionSet))
                 )))
             }
         }

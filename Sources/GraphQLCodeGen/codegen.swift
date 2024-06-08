@@ -40,11 +40,22 @@ public class Context {
     }
 }
 
-private func generateTypesInSchema(ctx: Context) throws -> [DeclSyntaxProtocol] {
+private func generateTypesInSchema(ctx: Context, visitedTypes: inout Set<String>) throws -> [DeclSyntaxProtocol] {
     var decls: [DeclSyntaxProtocol] = []
-    for tp in ctx.schema.types {
+    while let tpName = visitedTypes.popFirst() {
+        if (isGraphQLBuiltInScalarType(str: tpName)) { continue }
+        guard let tp = ctx.schema.types.first(where: { $0.name == tpName }) else {
+            throw CodegenErrors.invalidType(tpName)
+        }
         switch tp.kind {
         case .INPUT_OBJECT:
+            for field in tp.inputFields ?? [] {
+                let innerTp = try getWrappedType(ctx: ctx, type: field.type)
+                if let name = innerTp.name {
+                    if (isGraphQLBuiltInScalarType(str: name)) { continue }
+                    visitedTypes.insert(name)
+                }
+            }
             decls.append(try StructDeclSyntax(
                 modifiers: [DeclModifierSyntax(name: .keyword(.public))],
                 name: TokenSyntax.identifier(tp.name!),
@@ -93,11 +104,18 @@ public func generate(serverUrl: String, schema: __Schema, query: String) async t
 }
 
 public func generate(serverUrl: String, schema: __Schema, documents: [DocumentNode], rawDocuments: [String]) async throws -> String {
-    var schemaTypeDecls: [DeclSyntaxProtocol] = []
+    var visitedTypes: Set<String> = Set()
     var operationModelDecls: [StructDeclSyntax] = []
     var clientClassFunDecls:[DeclSyntax] = []
     let ctx = Context(serverUrl: serverUrl, schema: schema, documents: documents, rawDocuments: rawDocuments)
+    
     while true {
+        visit(node: ctx.document) { node in
+            if (node.kind == .NAMED_TYPE) {
+                let node = node as! NamedTypeNode
+                visitedTypes.insert(node.name.value)
+            }
+        }
         let operations = ctx.document.definitions
             .flatMap { a in
                 if case let .executable(e) = a {
@@ -111,13 +129,13 @@ public func generate(serverUrl: String, schema: __Schema, documents: [DocumentNo
                 }
                 return []
             }
-        schemaTypeDecls = try generateTypesInSchema(ctx: ctx)
         operationModelDecls.append(contentsOf: try operations.flatMap {
             try generateModelsForOperation(ctx: ctx, operation: $0)
         })
         clientClassFunDecls.append(contentsOf: try operations.map { try generateClientFuncForOperationDefinitionNode(ctx: ctx, operation: $0) })
         if (!ctx.next()) { break }
     }
+    let schemaTypeDecls: [DeclSyntaxProtocol] = try generateTypesInSchema(ctx: ctx, visitedTypes: &visitedTypes)
     
     let clientClassDecls = MemberBlockItemListSyntax(
         [
