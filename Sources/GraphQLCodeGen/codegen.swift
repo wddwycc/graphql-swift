@@ -14,6 +14,11 @@ public enum CodegenErrors: Error {
     case TODO(String)
 }
 
+public struct CodegenResult {
+    public let content: String
+    public let prompt: String
+}
+
 class Context {
     let serverUrl: String
     let schema: __Schema
@@ -104,13 +109,34 @@ func generateVisitedTypes(ctx: Context) throws -> [DeclSyntaxProtocol] {
     return decls
 }
 
-public func generate(serverUrl: String, schema: __Schema, query: String) async throws -> String {
+func generatePrompt(ctx: Context) -> String {
+    var content: [String] = []
+    let requiredCustomScalars = ctx.requiredCustomScalars.enumerated()
+        .sorted(by: { $0.element.key < $1.element.key })
+        .map { $0.element }
+    if (requiredCustomScalars.count > 0) {
+        content.append("Please implement custom scalars:")
+        for (name, (desc, specifiedByURL)) in requiredCustomScalars {
+            var line = "- \(name)"
+            if let desc {
+                line += ": \(desc)"
+            }
+            if let specifiedByURL {
+                content.append(" (\(specifiedByURL))")
+            }
+            content.append(line)
+        }
+    }
+    return content.joined(separator: "\n")
+}
+
+public func generate(serverUrl: String, schema: __Schema, query: String) async throws -> CodegenResult {
     let parser = try await GraphQLParser()
     let document = try await parser.parse(source: query)
     return try await generate(serverUrl: serverUrl, schema: schema, documents: [document], rawDocuments: [query])
 }
 
-public func generate(serverUrl: String, schema: __Schema, documents: [DocumentNode], rawDocuments: [String]) async throws -> String {
+public func generate(serverUrl: String, schema: __Schema, documents: [DocumentNode], rawDocuments: [String]) async throws -> CodegenResult {
     var operationModelDecls: [StructDeclSyntax] = []
     var clientClassFunDecls:[DeclSyntax] = []
     let ctx = Context(serverUrl: serverUrl, schema: schema, documents: documents, rawDocuments: rawDocuments)
@@ -223,22 +249,7 @@ public func generate(serverUrl: String, schema: __Schema, documents: [DocumentNo
         )
     }.formatted().description
     content += "\n"
-    
-    let requiredCustomScalars = ctx.requiredCustomScalars.enumerated()
-        .sorted(by: { $0.element.key < $1.element.key })
-        .map { $0.element }
-    if (requiredCustomScalars.count > 0) {
-        print("Please implement custom scalars:")
-        for (name, (desc, specifiedByURL)) in requiredCustomScalars {
-            print("- \(name)")
-            if let desc {
-                print("  - description: \(desc)")
-            }
-            if let specifiedByURL {
-                print("  - specifiedByURL: \(specifiedByURL)")
-            }
-        }
-    }
-    
-    return content
+
+    let prompt = generatePrompt(ctx: ctx)
+    return CodegenResult(content: content, prompt: prompt)
 }
