@@ -11,7 +11,7 @@ enum CodegenErrors: Error {
     
     case missingField(String)
     case missingLocationInfoInAST
-    case TODO
+    case TODO(String)
 }
 
 public class Context {
@@ -38,13 +38,26 @@ public class Context {
         }
         return false
     }
+    
+    var visitedTypes: Set<String> = Set()
 }
 
-private func generateTypesInSchema(ctx: Context) throws -> [DeclSyntaxProtocol] {
+private func generateVisitedTypes(ctx: Context) throws -> [DeclSyntaxProtocol] {
     var decls: [DeclSyntaxProtocol] = []
-    for tp in ctx.schema.types {
+    while let tpName = ctx.visitedTypes.popFirst() {
+        if (isGraphQLBuiltInScalarType(str: tpName)) { continue }
+        guard let tp = ctx.schema.types.first(where: { $0.name == tpName }) else {
+            throw CodegenErrors.invalidType(tpName)
+        }
         switch tp.kind {
         case .INPUT_OBJECT:
+            for field in tp.inputFields ?? [] {
+                let innerTp = try getWrappedType(ctx: ctx, type: field.type)
+                if let name = innerTp.name {
+                    if (isGraphQLBuiltInScalarType(str: name)) { continue }
+                    ctx.visitedTypes.insert(name)
+                }
+            }
             decls.append(try StructDeclSyntax(
                 modifiers: [DeclModifierSyntax(name: .keyword(.public))],
                 name: TokenSyntax.identifier(tp.name!),
@@ -93,10 +106,10 @@ public func generate(serverUrl: String, schema: __Schema, query: String) async t
 }
 
 public func generate(serverUrl: String, schema: __Schema, documents: [DocumentNode], rawDocuments: [String]) async throws -> String {
-    var schemaTypeDecls: [DeclSyntaxProtocol] = []
     var operationModelDecls: [StructDeclSyntax] = []
     var clientClassFunDecls:[DeclSyntax] = []
     let ctx = Context(serverUrl: serverUrl, schema: schema, documents: documents, rawDocuments: rawDocuments)
+    
     while true {
         let operations = ctx.document.definitions
             .flatMap { a in
@@ -111,13 +124,13 @@ public func generate(serverUrl: String, schema: __Schema, documents: [DocumentNo
                 }
                 return []
             }
-        schemaTypeDecls = try generateTypesInSchema(ctx: ctx)
         operationModelDecls.append(contentsOf: try operations.flatMap {
             try generateModelsForOperation(ctx: ctx, operation: $0)
         })
         clientClassFunDecls.append(contentsOf: try operations.map { try generateClientFuncForOperationDefinitionNode(ctx: ctx, operation: $0) })
         if (!ctx.next()) { break }
     }
+    let schemaTypeDecls: [DeclSyntaxProtocol] = try generateVisitedTypes(ctx: ctx)
     
     let clientClassDecls = MemberBlockItemListSyntax(
         [

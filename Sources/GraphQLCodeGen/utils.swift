@@ -20,9 +20,25 @@ extension String {
     }
 }
 
+enum GraphQLBuiltInScalarType: String {
+    case String, ID, Int, Float, Boolean
+    var swiftType: String {
+        switch self {
+        case .String, .ID: return "String"
+        case .Int: return "Int64"
+        case .Float: return "Float64"
+        case .Boolean: return "Bool"
+        }
+    }
+}
+
+func isGraphQLBuiltInScalarType(str: String) -> Bool {
+    return GraphQLBuiltInScalarType(rawValue: str) != nil
+}
+
 /// Reference: https://github.com/apple/swift-syntax/blob/swift-5.10-RELEASE/Sources/SwiftSyntax/generated/Keyword.swift#L15
 /// Copied here for inclusion check
-enum SwiftKeyword: String {
+fileprivate enum SwiftKeyword: String {
     case __consuming
     case __owned
     case __setter_access
@@ -231,4 +247,8 @@ enum SwiftKeyword: String {
     case witness_method
     case wrt
     case yield
+}
+
+func isSwiftKeyword(_ str: String) -> Bool {
+    return SwiftKeyword(rawValue: str) != nil
 }
