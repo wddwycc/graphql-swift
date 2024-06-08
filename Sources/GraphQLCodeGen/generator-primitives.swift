@@ -24,12 +24,12 @@ func convertSchemaTypeToSwiftType(ctx: Context, type: __Type, nonNull: Bool = fa
     let tp: TypeSyntaxProtocol
     switch type.kind {
     case .SCALAR:
+        ctx.visitedTypes.insert(type.name!)
         if let scalarType = GraphQLBuiltInScalarType(rawValue: type.name!) {
             tp = IdentifierTypeSyntax(name: TokenSyntax.identifier(scalarType.swiftType))
         } else {
-            // TODO: Support custom scalars
             // https://spec.graphql.org/October2021/#sec-Scalars.Custom-Scalars
-            throw CodegenErrors.TODO("support convertSchemaTypeToSwiftType for custom scalars")
+            tp = IdentifierTypeSyntax(name: TokenSyntax.identifier(type.name!))
         }
     case .OBJECT:
         ctx.visitedTypes.insert(type.name!)
@@ -65,7 +65,7 @@ func getWrappedType(ctx: Context, type: __Type) throws -> __Type {
     case .SCALAR:
         return type
     case .OBJECT:
-        guard let name = type.name else { throw CodegenErrors.invalidType("Expect name for OBJECT type") }
+        guard let name: String = type.name else { throw CodegenErrors.invalidType("Expect name for OBJECT type") }
         return ctx.schema.types.first(where: { $0.name == name })!
     case .INTERFACE:
         return type

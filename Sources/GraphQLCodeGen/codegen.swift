@@ -3,7 +3,7 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import GraphQLParser
 
-enum CodegenErrors: Error {
+public enum CodegenErrors: Error {
     case missingQueryTypeName
     case missingQueryType
     
@@ -14,7 +14,7 @@ enum CodegenErrors: Error {
     case TODO(String)
 }
 
-public class Context {
+class Context {
     let serverUrl: String
     let schema: __Schema
     private let documents: [DocumentNode]
@@ -40,16 +40,21 @@ public class Context {
     }
     
     var visitedTypes: Set<String> = Set()
+
+    // data used for stdout
+    var requiredCustomScalars: [String: (desc: String?, specifiedByURL: String?)] = [:]
 }
 
-private func generateVisitedTypes(ctx: Context) throws -> [DeclSyntaxProtocol] {
+func generateVisitedTypes(ctx: Context) throws -> [DeclSyntaxProtocol] {
     var decls: [DeclSyntaxProtocol] = []
     while let tpName = ctx.visitedTypes.popFirst() {
-        if (isGraphQLBuiltInScalarType(str: tpName)) { continue }
         guard let tp = ctx.schema.types.first(where: { $0.name == tpName }) else {
             throw CodegenErrors.invalidType(tpName)
         }
         switch tp.kind {
+        case .SCALAR:
+            if (isGraphQLBuiltInScalarType(str: tpName)) { continue }
+            ctx.requiredCustomScalars[tpName] = (desc: tp.description, specifiedByURL: tp.specifiedByURL)
         case .INPUT_OBJECT:
             for field in tp.inputFields ?? [] {
                 let innerTp = try getWrappedType(ctx: ctx, type: field.type)
@@ -218,5 +223,22 @@ public func generate(serverUrl: String, schema: __Schema, documents: [DocumentNo
         )
     }.formatted().description
     content += "\n"
+    
+    let requiredCustomScalars = ctx.requiredCustomScalars.enumerated()
+        .sorted(by: { $0.element.key < $1.element.key })
+        .map { $0.element }
+    if (requiredCustomScalars.count > 0) {
+        print("Please implement custom scalars:")
+        for (name, (desc, specifiedByURL)) in requiredCustomScalars {
+            print("- \(name)")
+            if let desc {
+                print("  - description: \(desc)")
+            }
+            if let specifiedByURL {
+                print("  - specifiedByURL: \(specifiedByURL)")
+            }
+        }
+    }
+    
     return content
 }
