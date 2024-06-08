@@ -29,19 +29,21 @@ func convertSchemaTypeToSwiftType(ctx: Context, type: __Type, nonNull: Bool = fa
         } else {
             // TODO: Support custom scalars
             // https://spec.graphql.org/October2021/#sec-Scalars.Custom-Scalars
-            throw CodegenErrors.TODO
+            throw CodegenErrors.TODO("support convertSchemaTypeToSwiftType for custom scalars")
         }
     case .OBJECT:
-        guard let name = type.name else { throw CodegenErrors.invalidType("Expect name for OBJECT type") }
-        tp = IdentifierTypeSyntax(name: TokenSyntax.identifier(name))
+        ctx.visitedTypes.insert(type.name!)
+        tp = IdentifierTypeSyntax(name: TokenSyntax.identifier(type.name!))
     case .INTERFACE:
-        throw CodegenErrors.TODO
+        throw CodegenErrors.TODO("support convertSchemaTypeToSwiftType for INTERFACE")
     case .UNION:
-        throw CodegenErrors.TODO
+        throw CodegenErrors.TODO("support convertSchemaTypeToSwiftType for UNION")
     case .ENUM:
+        ctx.visitedTypes.insert(type.name!)
         guard let name = type.name else { throw CodegenErrors.invalidType("Expect name for OBJECT type") }
         tp = IdentifierTypeSyntax(name: TokenSyntax.identifier(name))
     case .INPUT_OBJECT:
+        ctx.visitedTypes.insert(type.name!)
         guard let name = type.name else { throw CodegenErrors.invalidType("Expect name for OBJECT type") }
         tp = IdentifierTypeSyntax(name: TokenSyntax.identifier(name))
     case .LIST:
@@ -61,7 +63,7 @@ func convertSchemaTypeToSwiftType(ctx: Context, type: __Type, nonNull: Bool = fa
 func getWrappedType(ctx: Context, type: __Type) throws -> __Type {
     switch type.kind {
     case .SCALAR:
-        throw CodegenErrors.TODO
+        return type
     case .OBJECT:
         guard let name = type.name else { throw CodegenErrors.invalidType("Expect name for OBJECT type") }
         return ctx.schema.types.first(where: { $0.name == name })!

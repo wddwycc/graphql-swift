@@ -1,24 +1,5 @@
 import Foundation
 
-public struct ContinentFilterInput: Codable {
-    public var code: StringQueryOperatorInput?
-}
-public struct CountryFilterInput: Codable {
-    public var code: StringQueryOperatorInput?
-    public var continent: StringQueryOperatorInput?
-    public var currency: StringQueryOperatorInput?
-    public var name: StringQueryOperatorInput?
-}
-public struct LanguageFilterInput: Codable {
-    public var code: StringQueryOperatorInput?
-}
-public struct StringQueryOperatorInput: Codable {
-    public var eq: String?
-    public var `in`: [String]?
-    public var ne: String?
-    public var nin: [String]?
-    public var regex: String?
-}
 public enum __DirectiveLocation: String, Codable {
     /**
     Location adjacent to a query operation.
@@ -130,6 +111,19 @@ public enum __TypeKind: String, Codable {
     Indicates this type is a non-null. `ofType` is a valid field.
     */
     case NON_NULL
+}
+public struct CountryFilterInput: Codable {
+    public var code: StringQueryOperatorInput?
+    public var continent: StringQueryOperatorInput?
+    public var currency: StringQueryOperatorInput?
+    public var name: StringQueryOperatorInput?
+}
+public struct StringQueryOperatorInput: Codable {
+    public var eq: String?
+    public var `in`: [String]?
+    public var ne: String?
+    public var nin: [String]?
+    public var regex: String?
 }
 public struct IntrospectionQueryResponse: Codable {
     public let __schema: __Schema?

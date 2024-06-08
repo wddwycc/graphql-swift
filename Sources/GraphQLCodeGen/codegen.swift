@@ -11,7 +11,7 @@ enum CodegenErrors: Error {
     
     case missingField(String)
     case missingLocationInfoInAST
-    case TODO
+    case TODO(String)
 }
 
 public class Context {
@@ -38,11 +38,13 @@ public class Context {
         }
         return false
     }
+    
+    var visitedTypes: Set<String> = Set()
 }
 
-private func generateTypesInSchema(ctx: Context, visitedTypes: inout Set<String>) throws -> [DeclSyntaxProtocol] {
+private func generateVisitedTypes(ctx: Context) throws -> [DeclSyntaxProtocol] {
     var decls: [DeclSyntaxProtocol] = []
-    while let tpName = visitedTypes.popFirst() {
+    while let tpName = ctx.visitedTypes.popFirst() {
         if (isGraphQLBuiltInScalarType(str: tpName)) { continue }
         guard let tp = ctx.schema.types.first(where: { $0.name == tpName }) else {
             throw CodegenErrors.invalidType(tpName)
@@ -53,7 +55,7 @@ private func generateTypesInSchema(ctx: Context, visitedTypes: inout Set<String>
                 let innerTp = try getWrappedType(ctx: ctx, type: field.type)
                 if let name = innerTp.name {
                     if (isGraphQLBuiltInScalarType(str: name)) { continue }
-                    visitedTypes.insert(name)
+                    ctx.visitedTypes.insert(name)
                 }
             }
             decls.append(try StructDeclSyntax(
@@ -104,18 +106,11 @@ public func generate(serverUrl: String, schema: __Schema, query: String) async t
 }
 
 public func generate(serverUrl: String, schema: __Schema, documents: [DocumentNode], rawDocuments: [String]) async throws -> String {
-    var visitedTypes: Set<String> = Set()
     var operationModelDecls: [StructDeclSyntax] = []
     var clientClassFunDecls:[DeclSyntax] = []
     let ctx = Context(serverUrl: serverUrl, schema: schema, documents: documents, rawDocuments: rawDocuments)
     
     while true {
-        visit(node: ctx.document) { node in
-            if (node.kind == .NAMED_TYPE) {
-                let node = node as! NamedTypeNode
-                visitedTypes.insert(node.name.value)
-            }
-        }
         let operations = ctx.document.definitions
             .flatMap { a in
                 if case let .executable(e) = a {
@@ -135,7 +130,7 @@ public func generate(serverUrl: String, schema: __Schema, documents: [DocumentNo
         clientClassFunDecls.append(contentsOf: try operations.map { try generateClientFuncForOperationDefinitionNode(ctx: ctx, operation: $0) })
         if (!ctx.next()) { break }
     }
-    let schemaTypeDecls: [DeclSyntaxProtocol] = try generateTypesInSchema(ctx: ctx, visitedTypes: &visitedTypes)
+    let schemaTypeDecls: [DeclSyntaxProtocol] = try generateVisitedTypes(ctx: ctx)
     
     let clientClassDecls = MemberBlockItemListSyntax(
         [
