@@ -7,6 +7,10 @@ public protocol ASTNode {
     var loc: Location? { get }
 }
 
+public protocol ProxyNode {
+    var node: ASTNode { get }
+}
+
 // MARK: Name
 
 public class NameNode: ASTNode, Decodable {
@@ -33,7 +37,7 @@ public class DocumentNode: ASTNode, Decodable {
     }
 }
 
-public enum DefinitionNode: Decodable {
+public enum DefinitionNode: ProxyNode, Decodable {
     case executable(ExecutableDefinitionNode)
     case typeSystem(TypeSystemDefinitionNode)
     case typeSystemExtension(TypeSystemExtensionNode)
@@ -74,9 +78,17 @@ public enum DefinitionNode: Decodable {
             throw DecodingError.dataCorruptedError(forKey: .kind, in: container, debugDescription: "Unknown DefinitionNode kind")
         }
     }
+    
+    public var node: any ASTNode {
+        switch self {
+        case .executable(let a): return a.node
+        case .typeSystem(let a): return a.node
+        case .typeSystemExtension(let a): return a.node
+        }
+    }
 }
 
-public enum ExecutableDefinitionNode: Decodable {
+public enum ExecutableDefinitionNode: ProxyNode, Decodable {
     case operation(OperationDefinitionNode)
     case fragment(FragmentDefinitionNode)
     
@@ -95,6 +107,15 @@ public enum ExecutableDefinitionNode: Decodable {
             self = .fragment(try FragmentDefinitionNode(from: decoder))
         default:
             throw DecodingError.dataCorruptedError(forKey: .kind, in: container, debugDescription: "Unknown ExecutableDefinitionNode kind")
+        }
+    }
+    
+    public var node: any ASTNode {
+        switch self {
+        case .operation(let a):
+            return a
+        case .fragment(let a):
+            return a
         }
     }
 }
@@ -172,7 +193,7 @@ public class SelectionSetNode: ASTNode, Decodable {
     }
 }
 
-public enum SelectionNode: Decodable {
+public enum SelectionNode: ProxyNode, Decodable {
     case field(FieldNode)
     case fragmentSpread(FragmentSpreadNode)
     case inlineFragment(InlineFragmentNode)
@@ -195,6 +216,14 @@ public enum SelectionNode: Decodable {
             self = .inlineFragment(try InlineFragmentNode(from: decoder))
         default:
             throw DecodingError.dataCorruptedError(forKey: .kind, in: container, debugDescription: "Unknown SelectionNode kind")
+        }
+    }
+    
+    public var node: any ASTNode {
+        switch self {
+        case .field(let a): return a
+        case .fragmentSpread(let a): return a
+        case .inlineFragment(let a): return a
         }
     }
 }
@@ -295,7 +324,7 @@ public class FragmentDefinitionNode: ASTNode, Decodable {
 
 // MARK: Values
 
-public enum ValueNode: Decodable {
+public enum ValueNode: ProxyNode, Decodable {
     case variable(VariableNode)
     case intValue(IntValueNode)
     case floatValue(FloatValueNode)
@@ -337,9 +366,23 @@ public enum ValueNode: Decodable {
             throw DecodingError.dataCorruptedError(forKey: .kind, in: container, debugDescription: "Unsupported kind for ValueNode")
         }
     }
+    
+    public var node: any ASTNode {
+        switch self {
+        case .variable(let a): return a
+        case .intValue(let a): return a
+        case .floatValue(let a): return a
+        case .stringValue(let a): return a
+        case .booleanValue(let a): return a
+        case .nullValue(let a): return a
+        case .enumValue(let a): return a
+        case .listValue(let a): return a
+        case .objectValue(let a): return a
+        }
+    }
 }
 
-public enum ConstValueNode: Decodable {
+public enum ConstValueNode: ProxyNode, Decodable {
     case intValue(IntValueNode)
     case floatValue(FloatValueNode)
     case stringValue(StringValueNode)
@@ -376,6 +419,19 @@ public enum ConstValueNode: Decodable {
             self = .constObjectValue(try ConstObjectValueNode(from: decoder))
         default:
             throw DecodingError.dataCorruptedError(forKey: .kind, in: container, debugDescription: "Unsupported kind for ConstValueNode")
+        }
+    }
+    
+    public var node: any ASTNode {
+        switch self {
+        case .intValue(let a): return a
+        case .floatValue(let a): return a
+        case .stringValue(let a): return a
+        case .booleanValue(let a): return a
+        case .nullValue(let a): return a
+        case .enumValue(let a): return a
+        case .constListValue(let a): return a
+        case .constObjectValue(let a): return a
         }
     }
 }
@@ -607,7 +663,7 @@ public class NonNullTypeNode: ASTNode, Decodable {
 
 // MARK: Type System Definition
 
-public enum TypeSystemDefinitionNode: Decodable {
+public enum TypeSystemDefinitionNode: ProxyNode, Decodable {
     case schema(SchemaDefinitionNode)
     case type(TypeDefinitionNode)
     case directive(DirectiveDefinitionNode)
@@ -629,6 +685,14 @@ public enum TypeSystemDefinitionNode: Decodable {
             self = .directive(try DirectiveDefinitionNode(from: decoder))
         default:
             throw DecodingError.dataCorruptedError(forKey: .kind, in: container, debugDescription: "Unsupported kind for TypeSystemDefinitionNode")
+        }
+    }
+    
+    public var node: any ASTNode {
+        switch self {
+        case .schema(let a): return a
+        case .type(let a): return a.node
+        case .directive(let a): return a
         }
     }
 }
@@ -663,7 +727,7 @@ public class OperationTypeDefinitionNode: ASTNode, Decodable {
 
 // MARK: Type Definition
 
-public enum TypeDefinitionNode: Decodable {
+public enum TypeDefinitionNode: ProxyNode, Decodable {
     case scalar(ScalarTypeDefinitionNode)
     case object(ObjectTypeDefinitionNode)
     case interface(InterfaceTypeDefinitionNode)
@@ -694,6 +758,23 @@ public enum TypeDefinitionNode: Decodable {
             self = .inputObject(try InputObjectTypeDefinitionNode(from: decoder))
         default:
             throw DecodingError.dataCorruptedError(forKey: .kind, in: container, debugDescription: "Unknown TypeDefinitionNode kind")
+        }
+    }
+    
+    public var node: any ASTNode {
+        switch self {
+        case .scalar(let a):
+            return a
+        case .object(let a):
+            return a
+        case .interface(let a):
+            return a
+        case .union(let a):
+            return a
+        case .enum(let a):
+            return a
+        case .inputObject(let a):
+            return a
         }
     }
 }
@@ -878,7 +959,7 @@ public class DirectiveDefinitionNode: ASTNode, Decodable {
 
 // MARK: Type System Extensions
 
-public enum TypeSystemExtensionNode: Decodable {
+public enum TypeSystemExtensionNode: ProxyNode, Decodable {
     case schema(SchemaExtensionNode)
     case type(TypeExtensionNode)
     
@@ -905,6 +986,13 @@ public enum TypeSystemExtensionNode: Decodable {
             throw DecodingError.dataCorruptedError(forKey: .kind, in: container, debugDescription: "Unknown TypeSystemExtensionNode kind")
         }
     }
+    
+    public var node: any ASTNode {
+        switch self {
+        case .schema(let a): return a
+        case .type(let a): return a.node
+        }
+    }
 }
 
 public class SchemaExtensionNode: ASTNode, Decodable {
@@ -922,7 +1010,7 @@ public class SchemaExtensionNode: ASTNode, Decodable {
 
 // MARK: Type Extensions
 
-public enum TypeExtensionNode: Decodable {
+public enum TypeExtensionNode: ProxyNode, Decodable {
     case scalar(ScalarTypeExtensionNode)
     case object(ObjectTypeExtensionNode)
     case interface(InterfaceTypeExtensionNode)
@@ -953,6 +1041,23 @@ public enum TypeExtensionNode: Decodable {
             self = .inputObject(try InputObjectTypeExtensionNode(from: decoder))
         default:
             throw DecodingError.dataCorruptedError(forKey: .kind, in: container, debugDescription: "Invalid kind value for TypeExtensionNode")
+        }
+    }
+    
+    public var node: any ASTNode {
+        switch self {
+        case .scalar(let a):
+            return a
+        case .object(let a):
+            return a
+        case .interface(let a):
+            return a
+        case .union(let a):
+            return a
+        case .enumType(let a):
+            return a
+        case .inputObject(let a):
+            return a
         }
     }
 }
